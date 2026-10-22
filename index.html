@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F3F5F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121714" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Jack's Palate">
+<meta name="description" content="A five-minute quiz that figures out how Jack judges food.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<title>Jack's Palate Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one scrolling critic's scorecard, four numbered parts in order, a ticket-stub result at the end */
+:root{
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#F3F5F0; --card:#FFFFFF; --ink:#18211C; --muted:#5D6B63; --line:#D8DED8;
+  --tomato:#C9402A; --basil:#2E6A49; --basil-soft:#E1ECE4; --tomato-soft:#F6E1DC;
+  --display:"Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121714; --card:#1B221E; --ink:#E7ECE8; --muted:#9AA8A0; --line:#2E3832;
+  --tomato:#EE6B52; --basil:#6FC096; --basil-soft:#1F3328; --tomato-soft:#3A221D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121714; --card:#1B221E; --ink:#E7ECE8; --muted:#9AA8A0; --line:#2E3832;
+  --tomato:#EE6B52; --basil:#6FC096; --basil-soft:#1F3328; --tomato-soft:#3A221D; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(2.2rem,7vw,3.6rem);font-weight:800;line-height:1}
+h1 em{font-style:normal;color:var(--tomato)}
+h2{font-size:1.55rem;font-weight:800}
+p{margin:0}
+.lede{color:var(--muted);max-width:60ch}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--basil);font-weight:600}
+header{display:flex;flex-direction:column;gap:14px;padding-bottom:8px;border-bottom:2px solid var(--ink)}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:20px}
+.sec-head{display:flex;gap:14px;align-items:flex-start}
+.num{font-family:var(--display);font-weight:800;font-size:1.1rem;width:2.2rem;height:2.2rem;flex:none;border-radius:50%;
+  background:var(--ink);color:var(--card);display:grid;place-items:center}
+.sec-head div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sec-head p{color:var(--muted);font-size:.95rem}
+
+/* Part 1 sliders */
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px 28px}
+.sl{display:flex;flex-direction:column;gap:4px}
+.sl label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:600}
+.sl label small{font-weight:400;color:var(--muted);font-size:.82rem}
+.sl output{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--tomato);font-weight:600;min-width:2ch;text-align:right}
+input[type=range]{width:100%;accent-color:var(--tomato)}
+
+/* Part 2 pairs */
+.pairs{display:flex;flex-direction:column;gap:16px}
+.pair{display:flex;flex-direction:column;gap:8px}
+.pair-q{font-size:.85rem;color:var(--muted);font-family:var(--mono)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.choices{grid-template-columns:1fr}}
+.choice{position:relative}
+.choice input{position:absolute;opacity:0;pointer-events:none}
+.choice label{display:block;height:100%;border:1.5px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer;background:var(--bg);transition:border-color .15s,background .15s}
+.choice label:hover{border-color:var(--muted)}
+.choice input:checked+label{border-color:var(--basil);background:var(--basil-soft)}
+.choice input:focus-visible+label{outline:2px solid var(--tomato);outline-offset:2px}
+
+/* Part 3 meals */
+.meals{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.meal{border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.meal h3{margin:0;font-family:var(--display);font-size:1.15rem;font-weight:800}
+.meal .blurb{font-size:.9rem;color:var(--muted)}
+.meters{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center;font-size:.8rem}
+.meters span{color:var(--muted)}
+.dots{display:flex;gap:3px}
+.dots i{width:100%;max-width:22px;height:8px;border-radius:2px;background:var(--line)}
+.dots i.on{background:var(--ink)}
+.rate{display:flex;flex-direction:column;gap:6px}
+.rate-row{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.rate-row input{position:absolute;opacity:0;pointer-events:none}
+.rate-row label{display:grid;place-items:center;height:34px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:.85rem;background:var(--card);font-variant-numeric:tabular-nums}
+.rate-row input:checked+label{background:var(--tomato);border-color:var(--tomato);color:#fff}
+.rate-row input:focus-visible+label{outline:2px solid var(--basil);outline-offset:1px}
+.rate-cap{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);font-family:var(--mono)}
+
+/* Part 4 */
+.field{display:flex;flex-direction:column;gap:8px}
+.field>label,.field>.lbl{font-weight:600}
+.field .hint{font-size:.85rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip label{display:inline-block;padding:7px 14px;border:1.5px solid var(--line);border-radius:999px;cursor:pointer;font-size:.92rem;background:var(--bg)}
+.chip input:checked+label{border-color:var(--tomato);background:var(--tomato-soft);color:var(--ink)}
+.chip input:focus-visible+label{outline:2px solid var(--basil);outline-offset:2px}
+textarea,input[type=text]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{min-height:84px;resize:vertical}
+textarea:focus,input[type=text]:focus{outline:none;border-color:var(--basil)}
+
+/* Finish */
+.finish{border:2px dashed var(--ink);background:var(--card)}
+.btn{font:600 1rem var(--body);padding:12px 20px;border-radius:8px;border:none;cursor:pointer;background:var(--tomato);color:#fff;align-self:flex-start}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn:focus-visible{outline:2px solid var(--basil);outline-offset:2px}
+.status{font-size:.9rem;color:var(--muted)}
+.status.warn{color:var(--tomato)}
+.weights{display:flex;flex-direction:column;gap:6px}
+.wrow{display:grid;grid-template-columns:7.5rem 1fr 3rem;gap:10px;align-items:center;font-size:.88rem}
+.wbar{height:10px;border-radius:3px;background:var(--line);overflow:hidden}
+.wbar b{display:block;height:100%;background:var(--basil)}
+.wrow span:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+#code{font-family:var(--mono);font-size:.78rem;min-height:110px;word-break:break-all}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>
+.group{display:flex;flex-direction:column;gap:14px}
+.group+.group{padding-top:20px;border-top:1px solid var(--line)}
+.group-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.group-head h3{margin:0;font-family:var(--display);font-size:1.1rem;font-weight:800}
+.group-head span{font-size:.85rem;color:var(--muted)}
+.tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--basil-soft);color:var(--basil);font-weight:600}
+.tag.minor{background:var(--tomato-soft);color:var(--tomato)}
+.share{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.share-split{display:flex;height:12px;border-radius:3px;overflow:hidden}
+.share-split b{background:var(--basil)}
+.share-split i{background:var(--tomato)}
+.share-cap{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;font-variant-numeric:tabular-nums}
+.meters .rest{grid-column:1/-1;border-top:1px dashed var(--line);margin-top:4px;padding-top:6px;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.meters .rest .dots i.on{background:var(--tomato)}
+.wsub{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.wrow.r .wbar b{background:var(--tomato)}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Critic intake form · No. 002</span>
+    <h1>How does <em>Jack</em> actually judge food?</h1>
+    <p class="lede">Four short parts, about 5 minutes. This is mostly about what's on the plate. The restaurant around it counts too, just less. Go with your gut, because your gut is what we're trying to capture. At the end you'll get a code to text back to Carson, who will turn it into your personal scoring formula.</p>
+    <div class="meta"><span>8 food categories</span><span>4 restaurant factors</span><span>6 tradeoffs</span><span>7 dishes to rate</span><span>Answers save on this device as you go</span></div>
+  </header>
+
+  <section id="p1">
+    <div class="sec-head"><span class="num">1</span><div><h2>What matters to you</h2><p>0 means you don't care at all, 10 means it can make or break the dish.</p></div></div>
+    <div class="group">
+      <div class="group-head"><h3>The food</h3><span class="tag">Main score</span></div>
+      <div class="sliders" id="sliders-food"></div>
+    </div>
+    <div class="group">
+      <div class="group-head"><h3>The restaurant</h3><span class="tag minor">Side score</span></div>
+      <div class="sliders" id="sliders-rest"></div>
+      <div class="share">
+        <label for="restShare" style="font-weight:600">How much should the restaurant count toward your final score?</label>
+        <input type="range" id="restShare" min="0" max="40" step="5">
+        <div class="share-split" aria-hidden="true"><b id="shareFood"></b><i id="shareRest"></i></div>
+        <div class="share-cap"><span id="shareFoodTxt"></span><span id="shareRestTxt"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="p2">
+    <div class="sec-head"><span class="num">2</span><div><h2>This or that</h2><p>Same craving, same price unless it says otherwise. Which would you rather eat?</p></div></div>
+    <div class="pairs" id="pairs"></div>
+  </section>
+
+  <section id="p3">
+    <div class="sec-head"><span class="num">3</span><div><h2>Rate these dishes</h2><p>Each made-up dish shows how it did in each food category (more filled bars means better), plus one bar for the restaurant overall. Give it the score you'd actually put in a review.</p></div></div>
+    <div class="meals" id="meals"></div>
+  </section>
+
+  <section id="p4">
+    <div class="sec-head"><span class="num">4</span><div><h2>The Jack stuff</h2><p>The quirks that make your reviews yours.</p></div></div>
+    <div class="field">
+      <span class="lbl">Instant dealbreakers</span>
+      <span class="hint">If this goes badly, the dish can't score well no matter what else happened. Pick any.</span>
+      <div class="chips" id="deal"></div>
+    </div>
+    <div class="field">
+      <span class="lbl">How should price factor in?</span>
+      <div class="chips" id="price"></div>
+    </div>
+    <div class="field">
+      <label for="sig">What's one thing about food you always notice that most people don't?</label>
+      <span class="hint">Fries, sauce game, crust, the bread, char, how crispy the edges are. This becomes your signature category.</span>
+      <input type="text" id="sig" placeholder="e.g. whether the sauce is house-made">
+    </div>
+    <div class="field">
+      <label for="best">Best dish you've ever had, and what made it the best?</label>
+      <textarea id="best" placeholder="What it was, where, why it stuck with you"></textarea>
+    </div>
+    <div class="field">
+      <label for="worst">Worst dish you remember, and what ruined it?</label>
+      <textarea id="worst" placeholder="What went wrong"></textarea>
+    </div>
+  </section>
+
+  <section class="finish" id="finish">
+    <div class="sec-head"><span class="num">✓</span><div><h2>Send it to Carson</h2><p>Generate your code, copy it, and text or message the whole thing to Carson.</p></div></div>
+    <button class="btn" id="gen" type="button">Generate my code</button>
+    <p class="status" id="status" aria-live="polite">Unanswered questions are fine, but the more you fill in, the better your formula.</p>
+    <div id="result" class="field" hidden>
+      <span class="lbl">Your stated priorities</span>
+      <div class="weights" id="weights"></div>
+      <label for="code" style="margin-top:12px">Your code</label>
+      <textarea id="code" readonly></textarea>
+      <div class="row"><button class="btn" id="share" type="button" hidden>Send to Carson</button><button class="btn" id="copy" type="button">Copy code</button><span class="status" id="copied" aria-live="polite"></span></div>
+    </div>
+  </section>
+  <div class="row"><button class="btn ghost" id="reset" type="button">Clear my answers</button><span class="status" id="resetMsg"></span></div>
+</div>
+
+<script>
+const FOOD=[
+  {k:"flavor",n:"Flavor",d:"How good it tastes"},
+  {k:"seasoning",n:"Seasoning",d:"Salt, acid, heat, balance"},
+  {k:"texture",n:"Texture",d:"Crunch, tenderness, mouthfeel"},
+  {k:"execution",n:"Execution",d:"Cooked right, served at the right temp"},
+  {k:"ingredients",n:"Ingredients",d:"Freshness and quality"},
+  {k:"portion",n:"Portion",d:"Did you leave full"},
+  {k:"presentation",n:"Presentation",d:"How the plate looks"},
+  {k:"crave",n:"Craveability",d:"Will you think about it next week"}
+];
+const REST=[
+  {k:"service",n:"Service",d:"How the staff treated you"},
+  {k:"ambiance",n:"Ambiance",d:"The room, music, vibe"},
+  {k:"speed",n:"Speed",d:"Wait time, food out"},
+  {k:"value",n:"Value",d:"Worth what you paid"}
+];
+const PAIRS=[
+  {id:"q1",a:"flavor",b:"texture",A:"Amazing flavor, but the texture is a little off (soggy fries, chewy crust)",B:"Perfect texture, flavor is just good"},
+  {id:"q2",a:"ingredients",b:"seasoning",A:"Premium, super-fresh ingredients, a bit under-seasoned",B:"Ordinary ingredients, seasoned perfectly"},
+  {id:"q3",a:"portion",b:"execution",A:"A huge portion that's a little overcooked",B:"A small portion cooked perfectly"},
+  {id:"q4",a:"crave",b:"presentation",A:"Ugly, messy, and you'll crave it for weeks",B:"A beautiful plate you'll forget by tomorrow"},
+  {id:"q5",a:"flavor",b:"crave",A:"A technically impressive dish with complex flavors you respect",B:"A simple greasy dish you'd happily eat every week"},
+  {id:"q6",a:"food",b:"restaurant",A:"Incredible food, rude server, 40-minute wait",B:"Good food, great server, food out fast"}
+];
+const MEALS=[
+  {id:"d1",n:"Dive-Bar Smash Burger",b:"Crispy lacy edges, American cheese, plain bun, on a paper plate.",s:{flavor:5,seasoning:4,texture:4,execution:4,ingredients:3,portion:4,presentation:2,crave:5},r:2},
+  {id:"d2",n:"Omakase Nigiri",b:"Pristine fish, perfect rice, gone in four bites.",s:{flavor:4,seasoning:5,texture:5,execution:5,ingredients:5,portion:1,presentation:5,crave:3},r:5},
+  {id:"d3",n:"Family-Spot Lasagna",b:"Massive square, rich and comforting, a little mushy in the middle.",s:{flavor:5,seasoning:3,texture:3,execution:3,ingredients:3,portion:5,presentation:2,crave:4},r:3},
+  {id:"d4",n:"Trendy Fusion Tacos",b:"Gorgeous plating and fun ideas, but the flavors don't quite land.",s:{flavor:3,seasoning:3,texture:4,execution:4,ingredients:4,portion:2,presentation:5,crave:2},r:4},
+  {id:"d5",n:"Gas-Station Fried Chicken",b:"Shatteringly crunchy, well spiced, eaten in the car.",s:{flavor:4,seasoning:5,texture:5,execution:3,ingredients:2,portion:4,presentation:1,crave:5},r:1},
+  {id:"d6",n:"Steakhouse Ribeye",b:"Great cut, cooked exactly how you asked. Exactly what you expected.",s:{flavor:4,seasoning:4,texture:4,execution:5,ingredients:5,portion:4,presentation:4,crave:3},r:4},
+  {id:"d7",n:"Healthy Chicken Bowl",b:"Everything cooked perfectly and nothing seasoned at all.",s:{flavor:2,seasoning:1,texture:4,execution:5,ingredients:4,portion:4,presentation:3,crave:1},r:3}
+];
+const DEALS=[...FOOD.filter(c=>c.k!=="crave").map(c=>({k:c.k,n:c.n})),{k:"cold",n:"Food arriving cold"},{k:"cleanliness",n:"Dirty restaurant"},{k:"rude",n:"Rude service"}];
+const PRICE=[
+  {k:"relative",n:"Judge it against what it costs"},
+  {k:"absolute",n:"Good is good, price doesn't matter"},
+  {k:"some",n:"A little, only when it's way off"}
+];
+
+const KEY="jack-palate-quiz-v2";
+let state={w:{},share:20,p:{},m:{},deal:[],price:"",sig:"",best:"",worst:""};
+try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s)state=Object.assign(state,s)}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+const $=id=>document.getElementById(id);
+const el=(t,a={},h="")=>{const e=document.createElement(t);for(const k in a)e.setAttribute(k,a[k]);if(h)e.innerHTML=h;return e};
+
+// Part 1
+function slider(c,host){
+  const v=state.w[c.k]??5;state.w[c.k]=v;
+  const d=el("div",{class:"sl"});
+  d.innerHTML=`<label for="w-${c.k}"><span>${c.n} <small>${c.d}</small></span><output id="o-${c.k}">${v}</output></label><input type="range" id="w-${c.k}" min="0" max="10" step="1" value="${v}">`;
+  host.append(d);
+  d.querySelector("input").addEventListener("input",e=>{state.w[c.k]=+e.target.value;$("o-"+c.k).textContent=e.target.value;save()});
+}
+FOOD.forEach(c=>slider(c,$("sliders-food")));
+REST.forEach(c=>slider(c,$("sliders-rest")));
+function drawShare(){
+  const r=state.share,f=100-r;
+  $("shareFood").style.width=f+"%";$("shareRest").style.width=r+"%";
+  $("shareFoodTxt").textContent=`Food ${f}%`;$("shareRestTxt").textContent=`Restaurant ${r}%`;
+}
+$("restShare").value=state.share;drawShare();
+$("restShare").addEventListener("input",e=>{state.share=+e.target.value;drawShare();save()});
+
+// Part 2
+PAIRS.forEach((p,i)=>{
+  const d=el("div",{class:"pair"});
+  d.append(el("span",{class:"pair-q"},`Tradeoff ${i+1} of ${PAIRS.length}`));
+  const ch=el("div",{class:"choices"});
+  [["a",p.A],["b",p.B]].forEach(([side,txt])=>{
+    const w=el("div",{class:"choice"});
+    const id=`${p.id}-${side}`;
+    w.innerHTML=`<input type="radio" name="${p.id}" id="${id}" value="${side}" ${state.p[p.id]===side?"checked":""}><label for="${id}">${txt}</label>`;
+    w.querySelector("input").addEventListener("change",()=>{state.p[p.id]=side;save()});
+    ch.append(w);
+  });
+  d.append(ch);$("pairs").append(d);
+});
+// Part 3
+const dots=(n,label)=>`<div class="dots" aria-label="${label} ${n} of 5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?"on":""}"></i>`).join("")}</div>`;
+MEALS.forEach(m=>{
+  const d=el("div",{class:"meal"});
+  let met="";FOOD.forEach(c=>{met+=`<span>${c.n}</span>${dots(m.s[c.k],c.n)}`});
+  met+=`<div class="rest"><span>Restaurant</span>${dots(m.r,"Restaurant")}</div>`;
+  let r="";for(let i=1;i<=10;i++){const id=`${m.id}-${i}`;r+=`<span><input type="radio" name="${m.id}" id="${id}" value="${i}" ${state.m[m.id]===i?"checked":""}><label for="${id}">${i}</label></span>`}
+  d.innerHTML=`<h3>${m.n}</h3><p class="blurb">${m.b}</p><div class="meters">${met}</div><div class="rate"><div class="rate-row">${r}</div><div class="rate-cap"><span>Never again</span><span>All-timer</span></div></div>`;
+  d.querySelectorAll("input").forEach(inp=>inp.addEventListener("change",()=>{state.m[m.id]=+inp.value;save()}));
+  $("meals").append(d);
+});
+// Part 4
+DEALS.forEach(x=>{
+  const w=el("span",{class:"chip"});const id="d-"+x.k;
+  w.innerHTML=`<input type="checkbox" id="${id}" ${state.deal.includes(x.k)?"checked":""}><label for="${id}">${x.n}</label>`;
+  w.querySelector("input").addEventListener("change",e=>{state.deal=e.target.checked?[...new Set([...state.deal,x.k])]:state.deal.filter(k=>k!==x.k);save()});
+  $("deal").append(w);
+});
+PRICE.forEach(x=>{
+  const w=el("span",{class:"chip"});const id="pr-"+x.k;
+  w.innerHTML=`<input type="radio" name="price" id="${id}" ${state.price===x.k?"checked":""}><label for="${id}">${x.n}</label>`;
+  w.querySelector("input").addEventListener("change",()=>{state.price=x.k;save()});
+  $("price").append(w);
+});
+["sig","best","worst"].forEach(k=>{$(k).value=state[k]||"";$(k).addEventListener("input",e=>{state[k]=e.target.value;save()})});
+
+// Finish
+function pcts(list,scale){
+  const t=list.reduce((s,c)=>s+(state.w[c.k]||0),0);
+  const o={};list.forEach(c=>o[c.k]=t?scale*(state.w[c.k]||0)/t:scale/list.length);return o;
+}
+$("gen").addEventListener("click",()=>{
+  const fp=pcts(FOOD,100-state.share),rp=pcts(REST,state.share);
+  const wb=$("weights");wb.innerHTML="";
+  const rows=(list,p,cls)=>[...list].sort((a,b)=>p[b.k]-p[a.k]).forEach(c=>{
+    const v=Math.round(p[c.k]);
+    wb.insertAdjacentHTML("beforeend",`<div class="wrow ${cls}"><span>${c.n}</span><div class="wbar"><b style="width:${Math.min(100,v*2.5)}%"></b></div><span>${v}%</span></div>`);
+  });
+  wb.insertAdjacentHTML("beforeend",`<span class="wsub">Food · ${100-state.share}%</span>`);rows(FOOD,fp,"");
+  wb.insertAdjacentHTML("beforeend",`<span class="wsub">Restaurant · ${state.share}%</span>`);rows(REST,rp,"r");
+  const payload={v:2,w:state.w,share:state.share,p:state.p,m:state.m,deal:state.deal,price:state.price,sig:state.sig,best:state.best,worst:state.worst};
+  $("code").value="JACKVIBE2."+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  $("result").hidden=false;
+  const miss=PAIRS.filter(p=>!state.p[p.id]).length+MEALS.filter(m=>!state.m[m.id]).length;
+  $("status").textContent=miss?`Code ready. ${miss} tradeoff or dish question${miss>1?"s are":" is"} still blank. You can fill them in and generate again.`:"Code ready. Everything's answered.";
+  $("status").className="status"+(miss?" warn":"");
+  $("result").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+});
+$("copy").addEventListener("click",()=>{
+  const t=$("code");
+  const fallback=()=>{t.focus();t.select();$("copied").textContent="Selected. Press Ctrl+C or Cmd+C (or long-press and copy) to finish."};
+  try{navigator.clipboard.writeText(t.value).then(()=>{$("copied").textContent="Copied. Paste it into a text to Carson."},fallback)}catch(e){fallback()}
+});
+let armed=false;
+$("reset").addEventListener("click",()=>{
+  if(!armed){armed=true;$("reset").textContent="Tap again to clear everything";setTimeout(()=>{armed=false;$("reset").textContent="Clear my answers"},4000);return}
+  try{localStorage.removeItem(KEY)}catch(e){}
+  location.reload();
+});
+
+if(navigator.share){$("share").hidden=false;$("copy").classList.add("ghost")}
+$("share").addEventListener("click",async()=>{
+  try{await navigator.share({title:"Jack's Palate results",text:$("code").value});$("copied").textContent="Sent."}
+  catch(e){if(e&&e.name!=="AbortError")$("copied").textContent="Sharing didn't work. Use Copy code instead."}
+});
+if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+</script>
+
+</body>
+</html>
