@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Jack's Palate">
-<meta name="description" content="A five-minute quiz that figures out how Jack judges food.">
+<meta name="description" content="A five-minute quiz that figures out how you judge food.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
@@ -88,12 +88,10 @@ input[type=range]{width:100%;accent-color:var(--tomato)}
 .dots{display:flex;gap:3px}
 .dots i{width:100%;max-width:22px;height:8px;border-radius:2px;background:var(--line)}
 .dots i.on{background:var(--ink)}
-.rate{display:flex;flex-direction:column;gap:6px}
-.rate-row{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
-.rate-row input{position:absolute;opacity:0;pointer-events:none}
-.rate-row label{display:grid;place-items:center;height:34px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:.85rem;background:var(--card);font-variant-numeric:tabular-nums}
-.rate-row input:checked+label{background:var(--tomato);border-color:var(--tomato);color:#fff}
-.rate-row input:focus-visible+label{outline:2px solid var(--basil);outline-offset:1px}
+.rate{display:flex;flex-direction:column;gap:4px}
+.rate label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:600}
+.rate output{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--tomato);font-weight:600}
+.rate input.unset{opacity:.45}
 .rate-cap{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);font-family:var(--mono)}
 
 /* Part 4 */
@@ -149,8 +147,8 @@ textarea:focus,input[type=text]:focus{outline:none;border-color:var(--basil)}
 <div class="wrap">
   <header>
     <span class="eyebrow">Critic intake form · No. 002</span>
-    <h1>How does <em>Jack</em> actually judge food?</h1>
-    <p class="lede">Four short parts, about 5 minutes. This is mostly about what's on the plate. The restaurant around it counts too, just less. Go with your gut, because your gut is what we're trying to capture. At the end you'll get a code to text back to Carson, who will turn it into your personal scoring formula.</p>
+    <h1>How do <em>You</em> actually judge food?</h1>
+    <p class="lede">Four short parts, about 5 minutes. This is mostly about what's on the plate. The restaurant around it counts too, just less. Go with your gut, because your gut is what I am trying to capture. At the end you'll get a code to text back to me, and I will turn it into your personal scoring formula for fun.</p>
     <div class="meta"><span>8 food categories</span><span>4 restaurant factors</span><span>6 tradeoffs</span><span>7 dishes to rate</span><span>Answers save on this device as you go</span></div>
   </header>
 
@@ -183,7 +181,7 @@ textarea:focus,input[type=text]:focus{outline:none;border-color:var(--basil)}
   </section>
 
   <section id="p4">
-    <div class="sec-head"><span class="num">4</span><div><h2>The Jack stuff</h2><p>The quirks that make your reviews yours.</p></div></div>
+    <div class="sec-head"><span class="num">4</span><div><h2>Jack stuff</h2><p>The quirks that make your reviews yours.</p></div></div>
     <div class="field">
       <span class="lbl">Instant dealbreakers</span>
       <span class="hint">If this goes badly, the dish can't score well no matter what else happened. Pick any.</span>
@@ -209,7 +207,7 @@ textarea:focus,input[type=text]:focus{outline:none;border-color:var(--basil)}
   </section>
 
   <section class="finish" id="finish">
-    <div class="sec-head"><span class="num">✓</span><div><h2>Send it to Carson</h2><p>Generate your code, copy it, and text or message the whole thing to Carson.</p></div></div>
+    <div class="sec-head"><span class="num">✓</span><div><h2>Send it to me</h2><p>Generate your code, copy it, and text or message the whole thing to me.</p></div></div>
     <button class="btn" id="gen" type="button">Generate my code</button>
     <p class="status" id="status" aria-live="polite">Unanswered questions are fine, but the more you fill in, the better your formula.</p>
     <div id="result" class="field" hidden>
@@ -275,9 +273,9 @@ const el=(t,a={},h="")=>{const e=document.createElement(t);for(const k in a)e.se
 function slider(c,host){
   const v=state.w[c.k]??5;state.w[c.k]=v;
   const d=el("div",{class:"sl"});
-  d.innerHTML=`<label for="w-${c.k}"><span>${c.n} <small>${c.d}</small></span><output id="o-${c.k}">${v}</output></label><input type="range" id="w-${c.k}" min="0" max="10" step="1" value="${v}">`;
+  d.innerHTML=`<label for="w-${c.k}"><span>${c.n} <small>${c.d}</small></span><output id="o-${c.k}">${v.toFixed(1)}</output></label><input type="range" id="w-${c.k}" min="0" max="10" step="0.1" value="${v}">`;
   host.append(d);
-  d.querySelector("input").addEventListener("input",e=>{state.w[c.k]=+e.target.value;$("o-"+c.k).textContent=e.target.value;save()});
+  d.querySelector("input").addEventListener("input",e=>{state.w[c.k]=+e.target.value;$("o-"+c.k).textContent=state.w[c.k].toFixed(1);save()});
 }
 FOOD.forEach(c=>slider(c,$("sliders-food")));
 REST.forEach(c=>slider(c,$("sliders-rest")));
@@ -309,9 +307,10 @@ MEALS.forEach(m=>{
   const d=el("div",{class:"meal"});
   let met="";FOOD.forEach(c=>{met+=`<span>${c.n}</span>${dots(m.s[c.k],c.n)}`});
   met+=`<div class="rest"><span>Restaurant</span>${dots(m.r,"Restaurant")}</div>`;
-  let r="";for(let i=1;i<=10;i++){const id=`${m.id}-${i}`;r+=`<span><input type="radio" name="${m.id}" id="${id}" value="${i}" ${state.m[m.id]===i?"checked":""}><label for="${id}">${i}</label></span>`}
-  d.innerHTML=`<h3>${m.n}</h3><p class="blurb">${m.b}</p><div class="meters">${met}</div><div class="rate"><div class="rate-row">${r}</div><div class="rate-cap"><span>Never again</span><span>All-timer</span></div></div>`;
-  d.querySelectorAll("input").forEach(inp=>inp.addEventListener("change",()=>{state.m[m.id]=+inp.value;save()}));
+  // Unrated until the slider is moved, so a blank answer stays distinguishable from a real score
+  const v=state.m[m.id],has=v!=null;
+  d.innerHTML=`<h3>${m.n}</h3><p class="blurb">${m.b}</p><div class="meters">${met}</div><div class="rate"><label for="r-${m.id}"><span>Your score</span><output id="ro-${m.id}">${has?v.toFixed(1):"Drag to rate"}</output></label><input type="range" id="r-${m.id}" min="0" max="10" step="0.1" value="${has?v:5}" class="${has?"":"unset"}"><div class="rate-cap"><span>Never again</span><span>All-timer</span></div></div>`;
+  d.querySelector("input").addEventListener("input",e=>{state.m[m.id]=+e.target.value;e.target.classList.remove("unset");$("ro-"+m.id).textContent=state.m[m.id].toFixed(1);save()});
   $("meals").append(d);
 });
 // Part 4
@@ -343,10 +342,10 @@ $("gen").addEventListener("click",()=>{
   });
   wb.insertAdjacentHTML("beforeend",`<span class="wsub">Food · ${100-state.share}%</span>`);rows(FOOD,fp,"");
   wb.insertAdjacentHTML("beforeend",`<span class="wsub">Restaurant · ${state.share}%</span>`);rows(REST,rp,"r");
-  const payload={v:2,w:state.w,share:state.share,p:state.p,m:state.m,deal:state.deal,price:state.price,sig:state.sig,best:state.best,worst:state.worst};
-  $("code").value="JACKVIBE2."+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const payload={v:3,w:state.w,share:state.share,p:state.p,m:state.m,deal:state.deal,price:state.price,sig:state.sig,best:state.best,worst:state.worst};
+  $("code").value="JACKVIBE3."+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
   $("result").hidden=false;
-  const miss=PAIRS.filter(p=>!state.p[p.id]).length+MEALS.filter(m=>!state.m[m.id]).length;
+  const miss=PAIRS.filter(p=>!state.p[p.id]).length+MEALS.filter(m=>state.m[m.id]==null).length;
   $("status").textContent=miss?`Code ready. ${miss} tradeoff or dish question${miss>1?"s are":" is"} still blank. You can fill them in and generate again.`:"Code ready. Everything's answered.";
   $("status").className="status"+(miss?" warn":"");
   $("result").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});

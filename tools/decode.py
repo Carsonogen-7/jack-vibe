@@ -2,8 +2,8 @@
 """Decode a JACKVIBE results code from the quiz and print a readable summary.
 
 Usage:
-    python3 tools/decode.py "JACKVIBE2.eyJ2Ijoy..."
-    python3 tools/decode.py --json "JACKVIBE2...."   # raw JSON only
+    python3 tools/decode.py "JACKVIBE3.eyJ2Ijoy..."
+    python3 tools/decode.py --json "JACKVIBE3...."   # raw JSON only
 """
 import base64
 import json
@@ -17,7 +17,7 @@ def decode(code: str) -> dict:
     code = code.strip()
     prefix, _, body = code.partition(".")
     if not prefix.startswith("JACKVIBE") or not body:
-        raise ValueError("Not a JACKVIBE code. It should start with JACKVIBE2.")
+        raise ValueError("Not a JACKVIBE code. It should start with JACKVIBE3.")
     return json.loads(base64.b64decode(body).decode("utf-8"))
 
 
@@ -47,7 +47,7 @@ def main(argv):
     for label, group in (("FOOD", FOOD), ("RESTAURANT", REST)):
         print(label)
         for k in sorted(group, key=lambda k: -w[k]):
-            print(f"  {k:<13}{d['w'].get(k, 0):>3}/10  {w[k]:5.1f}%")
+            print(f"  {k:<13}{d['w'].get(k, 0):>4.1f}/10  {w[k]:5.1f}%")
         print()
     print("Tradeoffs:  ", d.get("p"))
     print("Dish scores:", d.get("m"))

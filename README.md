@@ -10,7 +10,7 @@ A five-minute quiz that captures how Jack judges food, as a static web app that 
 | `manifest.webmanifest` | Home-screen name, icon and colors |
 | `sw.js` | Service worker for offline use (only runs over HTTPS) |
 | `icons/` | Home-screen and favicon icons |
-| `tools/decode.py` | Decodes a `JACKVIBE2.` results code |
+| `tools/decode.py` | Decodes a `JACKVIBE3.` results code |
 
 ## Run it locally
 
@@ -36,23 +36,23 @@ Open the hosted URL in Safari → Share → Add to Home Screen. It launches full
 At the end of the quiz Jack taps **Send to Carson**, which opens the iOS share sheet with his code (or **Copy code** where sharing isn't available). Decode it with:
 
 ```bash
-python3 tools/decode.py "JACKVIBE2.eyJ2Ijoy..."
-python3 tools/decode.py --json "JACKVIBE2...."
+python3 tools/decode.py "JACKVIBE3.eyJ2Ijoy..."
+python3 tools/decode.py --json "JACKVIBE3...."
 ```
 
 ## Code format
 
-`JACKVIBE2.` + base64(UTF-8 JSON):
+`JACKVIBE3.` + base64(UTF-8 JSON):
 
 ```json
 {
-  "v": 2,
+  "v": 3,
   "w": { "flavor": 0-10, "seasoning": 0-10, "texture": 0-10, "execution": 0-10, "ingredients": 0-10,
          "portion": 0-10, "presentation": 0-10, "crave": 0-10,
-         "service": 0-10, "ambiance": 0-10, "speed": 0-10, "value": 0-10 },
+         "service": 0-10, "ambiance": 0-10, "speed": 0-10, "value": 0-10 },  // 0.0-10.0, one decimal
   "share": 0-40,                         // % of the final score given to the restaurant
   "p": { "q1": "a"|"b", ... "q6": ... }, // tradeoff picks
-  "m": { "d1": 1-10, ... "d7": ... },    // overall ratings of the 7 sample dishes
+  "m": { "d1": 0.0-10.0, ... "d7": ... }, // overall ratings of the 7 sample dishes; missing = unrated
   "deal": ["cold", "seasoning", ...],    // dealbreakers
   "price": "relative"|"absolute"|"some",
   "sig": "signature category text",
