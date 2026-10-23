@@ -1,7 +1,7 @@
 // Offline support: cache the app shell, serve it when there's no connection.
-// Bump VERSION whenever index.html changes so phones pick up the new copy.
-const VERSION = "jack-palate-v3";
-const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
+// Bump VERSION whenever index.html or log.html changes so phones pick up the new copy.
+const VERSION = "jack-palate-v4";
+const SHELL = ["./", "index.html", "manifest.webmanifest", "log.html", "log.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

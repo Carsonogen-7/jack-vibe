@@ -7,10 +7,13 @@ A five-minute quiz that captures how Jack judges food, as a static web app that 
 | File | What it is |
 |---|---|
 | `index.html` | The whole quiz: markup, styles and script in one file |
+| `log.html` | Vibe Log: Jack logs real meals and sends them in batches |
+| `log.webmanifest` | Home-screen settings for the Vibe Log |
 | `manifest.webmanifest` | Home-screen name, icon and colors |
 | `sw.js` | Service worker for offline use (only runs over HTTPS) |
 | `icons/` | Home-screen and favicon icons |
 | `tools/decode.py` | Decodes a `JACKVIBE3.` results code |
+| `tools/decode_log.py` | Decodes a `JACKLOG1.` review batch, optionally merging into a CSV |
 
 ## Run it locally
 
@@ -61,3 +64,15 @@ python3 tools/decode.py --json "JACKVIBE3...."
 ```
 
 The dish profiles behind `d1`–`d7` (1–5 per food category plus one restaurant score) are the `MEALS` array in `index.html`. Those plus Jack's ratings are the data for fitting revealed weights.
+
+## Review log
+
+`log.html` is for ongoing data. For each real meal Jack scores the 8 food categories and 4 restaurant factors (0.0–10.0, any can be skipped), ticks any dealbreakers that happened, and gives his own overall score. Reviews stay on his phone until he taps **Send**, which shares one code with every unsent review.
+
+```bash
+python3 tools/decode_log.py "JACKLOG1...."
+python3 tools/decode_log.py --csv reviews.csv "JACKLOG1...."   # keeps a running dataset
+```
+
+Code format: `JACKLOG1.` + base64(UTF-8 JSON) of `{"v":1,"r":[review,...]}`, where each review is
+`{"id","date","rest","dish","price"?,"f":{food key: 0-10},"r":{restaurant key: 0-10},"deal":[...],"o":0-10,"note"}`. Skipped categories are left out.

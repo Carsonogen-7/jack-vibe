@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F3F5F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121714" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Vibe Log">
+<meta name="description" content="Log real meals, category by category, and send them in batches.">
+<link rel="manifest" href="log.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<title>Vibe Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: same scorecard look as the quiz. Form to log a meal, the saved list, then the send box */
+:root{
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#F3F5F0; --card:#FFFFFF; --ink:#18211C; --muted:#5D6B63; --line:#D8DED8;
+  --tomato:#C9402A; --basil:#2E6A49; --basil-soft:#E1ECE4; --tomato-soft:#F6E1DC; --on-accent:#FFFFFF;
+  --display:"Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121714; --card:#1B221E; --ink:#E7ECE8; --muted:#9AA8A0; --line:#2E3832;
+  --tomato:#EE6B52; --basil:#6FC096; --basil-soft:#1F3328; --tomato-soft:#3A221D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121714; --card:#1B221E; --ink:#E7ECE8; --muted:#9AA8A0; --line:#2E3832;
+  --tomato:#EE6B52; --basil:#6FC096; --basil-soft:#1F3328; --tomato-soft:#3A221D; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(2.2rem,7vw,3.6rem);font-weight:800;line-height:1}
+h1 em{font-style:normal;color:var(--tomato)}
+h2{font-size:1.55rem;font-weight:800}
+h3{font-size:1.1rem;font-weight:800}
+p{margin:0}
+.lede{color:var(--muted);max-width:60ch}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--basil);font-weight:600}
+header{display:flex;flex-direction:column;gap:14px;padding-bottom:8px;border-bottom:2px solid var(--ink)}
+
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:20px}
+.sec-head{display:flex;gap:14px;align-items:flex-start}
+.num{font-family:var(--display);font-weight:800;font-size:1.1rem;width:2.2rem;height:2.2rem;flex:none;border-radius:50%;
+  background:var(--ink);color:var(--card);display:grid;place-items:center}
+.sec-head div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sec-head p{color:var(--muted);font-size:.95rem}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 20px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.field>.lbl{font-weight:600}
+.hint{font-size:.85rem;color:var(--muted)}
+textarea,input[type=text],input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px}
+textarea{min-height:84px;resize:vertical}
+textarea:focus,input:focus{outline:none;border-color:var(--basil)}
+
+.group{display:flex;flex-direction:column;gap:14px}
+.group+.group{padding-top:20px;border-top:1px solid var(--line)}
+.group-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.group-head span{font-size:.85rem;color:var(--muted)}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px 28px}
+.sl{display:flex;flex-direction:column;gap:4px}
+.sl-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600}
+.sl-top small{font-weight:400;color:var(--muted);font-size:.82rem}
+.val{font:600 .9rem var(--mono);font-variant-numeric:tabular-nums;color:var(--tomato);background:none;border:1px solid transparent;border-radius:6px;min-width:4.5rem;min-height:34px;padding:0 8px;cursor:pointer;text-align:right}
+.val.empty{color:var(--muted);font-weight:400}
+.val:focus-visible{outline:2px solid var(--basil)}
+input[type=range]{width:100%;accent-color:var(--tomato)}
+input[type=range].unset{opacity:.4}
+
+.overall{padding:16px;border-radius:8px;background:var(--bg);border:2px solid var(--ink);display:flex;flex-direction:column;gap:6px}
+.overall .val{font-size:1.4rem}
+.overall .val.empty{font-size:.9rem;white-space:nowrap}
+.cap{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);font-family:var(--mono)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip label{display:inline-block;padding:7px 14px;border:1.5px solid var(--line);border-radius:999px;cursor:pointer;font-size:.92rem;background:var(--bg)}
+.chip input:checked+label{border-color:var(--tomato);background:var(--tomato-soft);color:var(--ink)}
+.chip input:checked+label::before{content:"✓ ";font-weight:700;color:var(--tomato)}
+.chip input:focus-visible+label{outline:2px solid var(--basil);outline-offset:2px}
+
+.btn{font:600 1rem var(--body);padding:12px 20px;border-radius:8px;border:none;cursor:pointer;background:var(--tomato);color:var(--on-accent);min-height:44px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn.small{font-size:.85rem;padding:6px 12px;min-height:34px}
+.btn:focus-visible{outline:2px solid var(--basil);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.status{font-size:.9rem;color:var(--muted)}
+.status.warn{color:var(--tomato)}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.item{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--bg);display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+.item-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.item-main b{overflow-wrap:anywhere}
+.item-meta{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.score{font-family:var(--display);font-weight:800;font-size:1.6rem;font-variant-numeric:tabular-nums;color:var(--tomato)}
+.item .row{grid-column:1/-1}
+.badge{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--basil-soft);color:var(--basil);font-weight:600}
+.badge.new{background:var(--tomato-soft);color:var(--tomato)}
+.empty-list{color:var(--muted);font-size:.95rem}
+
+.finish{border:2px dashed var(--ink)}
+#code{font-family:var(--mono);font-size:.78rem;min-height:110px;word-break:break-all}
+.check{display:flex;gap:8px;align-items:center;font-size:.92rem;min-height:34px}
+.check input{width:20px;height:20px;accent-color:var(--basil)}
+a{color:var(--basil)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Review log · Field notes</span>
+    <h1>Log a <em>meal</em></h1>
+    <p class="lede">Score each meal you eat out. Every few meals, tap Send.</p>
+  </header>
+
+  <section id="form">
+    <div class="sec-head"><span class="num" id="formNum">+</span><div><h2 id="formTitle">New review</h2><p>How did <b>this meal</b> do in each one? Skip any that don't apply.</p></div></div>
+    <div class="grid2">
+      <div class="field"><label for="rest">Restaurant</label><input type="text" id="rest" autocomplete="off" placeholder="Where"></div>
+      <div class="field"><label for="dish">Dish</label><input type="text" id="dish" autocomplete="off" placeholder="What you ordered"></div>
+      <div class="field"><label for="date">Date</label><input type="date" id="date"></div>
+      <div class="field"><label for="price">Price paid ($)</label><input type="text" id="price" inputmode="decimal" autocomplete="off" placeholder="Optional"></div>
+    </div>
+    <div class="group">
+      <div class="group-head"><h3>The food</h3></div>
+      <div class="sliders" id="sl-food"></div>
+    </div>
+    <div class="group">
+      <div class="group-head"><h3>The restaurant</h3><span>Skip these for takeout</span></div>
+      <div class="sliders" id="sl-rest"></div>
+    </div>
+    <div class="group">
+      <div class="field"><span class="lbl">Anything ruin it? Tap <u>all</u> that happened.</span><div class="chips" id="deal"></div></div>
+    </div>
+    <div class="overall">
+      <div class="sl-top"><label for="o">Your overall score</label><button class="val empty" type="button" id="ov" aria-label="Overall score">Drag to rate</button></div>
+      <input type="range" id="o" min="0" max="10" step="0.1" value="5" class="unset">
+      <div class="cap"><span>Never again</span><span>All-timer</span></div>
+    </div>
+    <div class="field"><label for="note">Notes</label><textarea id="note" placeholder="Anything that stood out, good or bad"></textarea></div>
+    <div class="row"><button class="btn" id="save" type="button">Save review</button><button class="btn ghost" id="cancel" type="button" hidden>Cancel edit</button><span class="status" id="formMsg" aria-live="polite"></span></div>
+  </section>
+
+  <section id="saved">
+    <div class="sec-head"><span class="num" id="count">0</span><div><h2>Your reviews</h2><p id="savedSub">Newest first.</p></div></div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section class="finish" id="send">
+    <div class="sec-head"><span class="num">✓</span><div><h2>Send It</h2><p>Makes one code with every review you haven't sent yet. Text it to me.</p></div></div>
+    <label class="check"><input type="checkbox" id="all"> Include reviews I already sent</label>
+    <div class="row"><button class="btn" id="gen" type="button">Make my code</button></div>
+    <p class="status" id="sendMsg" aria-live="polite"></p>
+    <div class="field" id="result" hidden>
+      <textarea id="code" readonly aria-label="Your code"></textarea>
+      <div class="row"><button class="btn" id="share" type="button" hidden>Send</button><button class="btn" id="copy" type="button">Copy code</button><span class="status" id="copied" aria-live="polite"></span></div>
+      <button class="btn ghost small" id="markSent" type="button" style="align-self:flex-start">I sent it, mark these as sent</button>
+    </div>
+  </section>
+  <p class="hint">Haven't taken the palate quiz yet? <a href="./">Start there</a>.</p>
+</div>
+
+<script>
+// Category keys must match index.html and tools/decode_log.py
+// Short concrete labels: Jack skims, so each one says what to judge, not a definition
+const FOOD=[
+  {k:"flavor",n:"Flavor",d:"Did it taste good?"},
+  {k:"seasoning",n:"Seasoning",d:"Salt, spice, sauce right?"},
+  {k:"texture",n:"Texture",d:"Crunch, chew, tenderness"},
+  {k:"execution",n:"Execution",d:"Cooked right? Not over, not soggy, not cold"},
+  {k:"ingredients",n:"Ingredients",d:"Fresh? Good quality?"},
+  {k:"portion",n:"Portion",d:"Enough food?"},
+  {k:"presentation",n:"Presentation",d:"Looked good?"},
+  {k:"crave",n:"Craveability",d:"Want it again?"}
+];
+const REST=[
+  {k:"service",n:"Service",d:"Staff good to you?"},
+  {k:"ambiance",n:"Ambiance",d:"Nice place to be?"},
+  {k:"speed",n:"Speed",d:"Food came out fast?"},
+  {k:"value",n:"Value",d:"Worth the price?"}
+];
+const DEALS=[...FOOD.filter(c=>c.k!=="crave").map(c=>({k:c.k,n:c.n})),{k:"cold",n:"Food arriving cold"},{k:"cleanliness",n:"Dirty restaurant"},{k:"rude",n:"Rude service"}];
+
+const KEY="jack-vibe-log-v1",DRAFT="jack-vibe-log-draft-v1";
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||"null")??d}catch(e){return d}};
+const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let reviews=load(KEY,[]);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const blank=()=>({rest:"",dish:"",date:today(),price:"",f:{},r:{},deal:[],o:null,note:""});
+let draft=Object.assign(blank(),load(DRAFT,{})),editing=null;
+const saveDraft=()=>store(DRAFT,draft);
+
+// Sliders stay unset until moved, so a skipped category is never recorded as a score
+function slider(c,host,bag){
+  const d=document.createElement("div");d.className="sl";
+  d.innerHTML=`<div class="sl-top"><label for="s-${c.k}">${c.n} <small>${c.d}</small></label><button class="val" type="button" id="v-${c.k}" aria-label="${c.n} score, tap to clear"></button></div><input type="range" id="s-${c.k}" min="0" max="10" step="0.1"><div class="cap"><span>Bad</span><span>Perfect</span></div>`;
+  host.append(d);
+  const inp=d.querySelector("input"),out=d.querySelector("button");
+  inp.addEventListener("input",()=>{draft[bag][c.k]=+inp.value;paint(c.k,draft[bag][c.k],inp,out);saveDraft()});
+  out.addEventListener("click",()=>{delete draft[bag][c.k];paint(c.k,null,inp,out);saveDraft()});
+}
+function paint(k,v,inp,out){
+  const has=v!=null;
+  if(has)inp.value=v;else inp.value=5;
+  inp.classList.toggle("unset",!has);out.classList.toggle("empty",!has);
+  out.textContent=has?v.toFixed(1):"skip";
+}
+FOOD.forEach(c=>slider(c,$("sl-food"),"f"));
+REST.forEach(c=>slider(c,$("sl-rest"),"r"));
+DEALS.forEach(x=>{
+  const w=document.createElement("span");w.className="chip";
+  w.innerHTML=`<input type="checkbox" id="d-${x.k}"><label for="d-${x.k}">${x.n}</label>`;
+  w.querySelector("input").addEventListener("change",e=>{draft.deal=e.target.checked?[...new Set([...draft.deal,x.k])]:draft.deal.filter(k=>k!==x.k);saveDraft()});
+  $("deal").append(w);
+});
+function paintOverall(){
+  const v=draft.o,has=v!=null;
+  $("o").value=has?v:5;$("o").classList.toggle("unset",!has);
+  $("ov").classList.toggle("empty",!has);$("ov").textContent=has?v.toFixed(1):"Drag to rate";
+}
+$("o").addEventListener("input",e=>{draft.o=+e.target.value;paintOverall();saveDraft()});
+$("ov").addEventListener("click",()=>{draft.o=null;paintOverall();saveDraft()});
+["rest","dish","date","price","note"].forEach(k=>$(k).addEventListener("input",e=>{draft[k]=e.target.value;saveDraft()}));
+
+function fillForm(){
+  ["rest","dish","date","price","note"].forEach(k=>$(k).value=draft[k]??"");
+  FOOD.forEach(c=>paint(c.k,draft.f[c.k],$("s-"+c.k),$("v-"+c.k)));
+  REST.forEach(c=>paint(c.k,draft.r[c.k],$("s-"+c.k),$("v-"+c.k)));
+  DEALS.forEach(x=>$("d-"+x.k).checked=draft.deal.includes(x.k));
+  paintOverall();
+  $("formTitle").textContent=editing?"Edit review":"New review";$("formNum").textContent=editing?"✎":"+";
+  $("save").textContent=editing?"Update review":"Save review";$("cancel").hidden=!editing;
+}
+
+$("save").addEventListener("click",()=>{
+  const msg=$("formMsg");msg.className="status warn";
+  if(!draft.rest.trim()&&!draft.dish.trim()){msg.textContent="Add the restaurant or the dish first.";return}
+  if(draft.o==null){msg.textContent="Give it an overall score first.";$("o").focus();return}
+  const price=parseFloat(String(draft.price).replace(/[^0-9.]/g,""));
+  const r={rest:draft.rest.trim(),dish:draft.dish.trim(),date:draft.date||today(),f:{...draft.f},r:{...draft.r},deal:[...draft.deal],o:draft.o,note:draft.note.trim()};
+  if(!isNaN(price))r.price=price;
+  if(editing){const i=reviews.findIndex(x=>x.id===editing);if(i>=0)reviews[i]={...r,id:editing,sent:false}}
+  else reviews.push({...r,id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),sent:false});
+  store(KEY,reviews);
+  msg.className="status";msg.textContent=editing?"Updated.":"Saved. Nice.";
+  editing=null;draft=blank();saveDraft();fillForm();renderList();
+  setTimeout(()=>{if(msg.textContent==="Saved. Nice."||msg.textContent==="Updated.")msg.textContent=""},3000);
+});
+$("cancel").addEventListener("click",()=>{editing=null;draft=blank();saveDraft();fillForm();$("formMsg").textContent=""});
+
+function renderList(){
+  const L=$("list"),unsent=reviews.filter(r=>!r.sent).length;
+  $("count").textContent=reviews.length;
+  $("savedSub").textContent=reviews.length?`Newest first. ${unsent} not sent yet.`:"Newest first.";
+  if(!reviews.length){L.innerHTML=`<p class="empty-list">No reviews yet. Your first one will show up here.</p>`;return}
+  L.innerHTML="";
+  [...reviews].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id.localeCompare(a.id)).forEach(r=>{
+    const d=document.createElement("div");d.className="item";
+    d.innerHTML=`<div class="item-main"><b>${esc(r.dish||r.rest)}</b><span class="item-meta">${esc([r.dish?r.rest:"",r.date,r.price!=null?"$"+r.price:""].filter(Boolean).join(" · "))}</span></div><span class="score">${r.o.toFixed(1)}</span><div class="row"><span class="badge ${r.sent?"":"new"}">${r.sent?"Sent":"Not sent"}</span><button class="btn ghost small" type="button" data-a="edit">Edit</button><button class="btn ghost small" type="button" data-a="del">Delete</button></div>`;
+    d.querySelector('[data-a="edit"]').addEventListener("click",()=>{
+      editing=r.id;draft={...blank(),...r,f:{...r.f},r:{...r.r},deal:[...r.deal],price:r.price??""};
+      fillForm();$("formMsg").textContent="";$("form").scrollIntoView({behavior:"smooth",block:"start"});
+    });
+    const del=d.querySelector('[data-a="del"]');let armed=false;
+    del.addEventListener("click",()=>{
+      if(!armed){armed=true;del.textContent="Tap again to delete";setTimeout(()=>{armed=false;del.textContent="Delete"},4000);return}
+      reviews=reviews.filter(x=>x.id!==r.id);store(KEY,reviews);
+      if(editing===r.id){editing=null;draft=blank();saveDraft();fillForm()}
+      renderList();
+    });
+    L.append(d);
+  });
+}
+
+let batch=[];
+$("gen").addEventListener("click",()=>{
+  batch=reviews.filter(r=>$("all").checked||!r.sent);
+  const m=$("sendMsg");
+  if(!batch.length){m.className="status warn";m.textContent=reviews.length?"Everything's already sent. Tick the box above to send it again.":"No reviews to send yet.";$("result").hidden=true;return}
+  const payload={v:1,r:batch.map(({sent,...r})=>r)};
+  $("code").value="JACKLOG1."+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  m.className="status";m.textContent=`Code ready with ${batch.length} review${batch.length>1?"s":""}.`;
+  $("copied").textContent="";$("result").hidden=false;
+});
+function markSent(){
+  const ids=new Set(batch.map(r=>r.id));
+  reviews.forEach(r=>{if(ids.has(r.id))r.sent=true});store(KEY,reviews);renderList();
+}
+$("markSent").addEventListener("click",()=>{markSent();$("copied").textContent="Marked as sent."});
+$("copy").addEventListener("click",()=>{
+  const t=$("code");
+  const fallback=()=>{t.focus();t.select();$("copied").textContent="Selected. Long-press and copy to finish."};
+  try{navigator.clipboard.writeText(t.value).then(()=>{$("copied").textContent="Copied. Paste it into a text to me, then tap the button below."},fallback)}catch(e){fallback()}
+});
+if(navigator.share){$("share").hidden=false;$("copy").classList.add("ghost")}
+$("share").addEventListener("click",async()=>{
+  try{await navigator.share({title:"Vibe Log reviews",text:$("code").value});markSent();$("copied").textContent="Sent and marked."}
+  catch(e){if(e&&e.name!=="AbortError")$("copied").textContent="Sharing didn't work. Use Copy code instead."}
+});
+
+fillForm();renderList();
+if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+</script>
+</body>
+</html>
