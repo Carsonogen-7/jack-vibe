@@ -13,8 +13,9 @@ A personal side project: a scoring formula ("Jack Vibe Score") tailored to Carso
 - Static site, no build step. Two self-contained pages: `index.html` (one-time quiz) and `log.html` (ongoing review log, its own home-screen app via `log.webmanifest`). Category keys must stay identical across both pages and both decoders.
 - Must work well on iPhone Safari and as a home-screen app: safe-area insets, no horizontal scroll at 390px, tap targets ≥ 34px.
 - Light and dark themes via CSS tokens on `:root`. Add colors as tokens, not literals.
-- Answers persist in `localStorage` (quiz: `jack-palate-quiz-v2`; log: `jack-vibe-log-v1` plus a draft key), wrapped in try/catch.
-- Review log travels as `JACKLOG1.` + base64 JSON, only unsent reviews by default. Each review has an id; `tools/decode_log.py --csv` merges by id, so resends and edits never duplicate.
+- Answers persist in `localStorage` (quiz: `jack-palate-quiz-v2`; log: `jack-vibe-log-v2` plus a draft key, migrated from `jack-vibe-log-v1`), wrapped in try/catch. Log photos live in IndexedDB (`vibe-log-photos`) and never leave the phone.
+- The log groups dishes under restaurants (folders). Restaurant scores are entered once and editable, never re-prompted. It travels as `JACKLOG2.` + base64 JSON (places + dishes), only unsent items by default. Ids everywhere; `tools/decode_log.py --csv` merges by id and still reads `JACKLOG1`.
+- Jack's review CSV lives outside the repo (`../data/`), because the repo is public. Never commit it.
 - Bump `VERSION` in `sw.js` whenever `index.html` or `log.html` changes.
 
 ## Testing

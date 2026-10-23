@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Vibe Log">
-<meta name="description" content="Log real meals, category by category, and send them in batches.">
+<meta name="description" content="Log real meals by restaurant, dish by dish, and send them in batches.">
 <link rel="manifest" href="log.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
@@ -18,11 +18,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: same scorecard look as the quiz. Form to log a meal, the saved list, then the send box */
+/* Layout: restaurants are folders. Home lists them, a restaurant page holds its scores and dishes, a dish page is the scoring form */
 :root{
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
   --bg:#FBF4E6; --card:#FFFDF8; --ink:#2B1B12; --muted:#6E5847; --line:#E6D8C0;
   --ketchup:#B8322A; --mustard:#8A5B00; --mustard-bright:#E0A526; --mustard-soft:#F6E3AE; --ketchup-soft:#F8DDD6; --on-accent:#FFFFFF;
+  --scrim:rgba(20,12,8,.62); --scrim-strong:rgba(20,12,8,.92); --on-scrim:#FFFFFF;
   --display:"Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
   --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -35,14 +36,15 @@
   --ketchup:#F07A68; --mustard:#E8B341; --mustard-bright:#E8B341; --mustard-soft:#3B2D12; --ketchup-soft:#41221C; --on-accent:#1C1410; color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
-.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.wrap,#view{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
 h1{font-size:clamp(2.2rem,7vw,3.6rem);font-weight:800;line-height:1}
 h1 em{font-style:normal;color:var(--ketchup)}
-h2{font-size:1.55rem;font-weight:800}
+h2{font-size:1.55rem;font-weight:800;overflow-wrap:anywhere}
 h3{font-size:1.1rem;font-weight:800}
 p{margin:0}
 .lede{color:var(--muted);max-width:60ch}
@@ -58,16 +60,16 @@ section{background:var(--card);border:1px solid var(--line);border-radius:10px;p
 
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 20px}
 .field{display:flex;flex-direction:column;gap:6px}
-.field>label,.field>.lbl{font-weight:600}
+.field>label,.lbl{font-weight:600}
 .hint{font-size:.85rem;color:var(--muted)}
 textarea,input[type=text],input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px}
 textarea{min-height:84px;resize:vertical}
 textarea:focus,input:focus{outline:none;border-color:var(--mustard)}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
 
 .group{display:flex;flex-direction:column;gap:14px}
 .group+.group{padding-top:20px;border-top:1px solid var(--line)}
-.group-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-.group-head span{font-size:.85rem;color:var(--muted)}
+.group-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px 28px}
 .sl{display:flex;flex-direction:column;gap:4px}
 .sl-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600}
@@ -77,6 +79,8 @@ textarea:focus,input:focus{outline:none;border-color:var(--mustard)}
 .val:focus-visible{outline:2px solid var(--mustard)}
 input[type=range]{width:100%;accent-color:var(--ketchup)}
 input[type=range].unset{opacity:.4}
+.summary{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.92rem;color:var(--muted)}
+.summary b{color:var(--ink);font-family:var(--mono);font-variant-numeric:tabular-nums}
 
 .overall{padding:16px;border-radius:8px;background:var(--bg);border:2px solid var(--ink);display:flex;flex-direction:column;gap:6px}
 .overall .val{font-size:1.4rem}
@@ -91,32 +95,49 @@ input[type=range].unset{opacity:.4}
 .chip input:focus-visible+label{outline:2px solid var(--mustard);outline-offset:2px}
 
 .btn{font:600 1rem var(--body);padding:12px 20px;border-radius:8px;border:none;cursor:pointer;background:var(--ketchup);color:var(--on-accent);min-height:44px}
+a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;align-self:flex-start}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
 .btn.small{font-size:.85rem;padding:6px 12px;min-height:34px}
 .btn:focus-visible{outline:2px solid var(--mustard);outline-offset:2px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.add-row{flex-wrap:nowrap}
+.add-row input{flex:1;min-width:0}
 .status{font-size:.9rem;color:var(--muted)}
 .status.warn{color:var(--ketchup)}
+.status:empty{display:none}
+.back{display:inline-flex;align-items:center;min-height:44px;font:600 1rem var(--body);color:var(--ketchup);background:none;border:none;padding:0;cursor:pointer;text-decoration:none;align-self:flex-start;overflow-wrap:anywhere}
 
 .list{display:flex;flex-direction:column;gap:10px}
-.item{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--bg);display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+.folder{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);text-decoration:none;min-height:76px}
+.folder:focus-visible{outline:2px solid var(--mustard);outline-offset:2px}
+.thumb{width:56px;height:56px;border-radius:6px;object-fit:cover;background:var(--mustard-soft);display:grid;place-items:center;font:800 1.4rem var(--display);color:var(--mustard)}
 .item-main{display:flex;flex-direction:column;gap:2px;min-width:0}
 .item-main b{overflow-wrap:anywhere}
 .item-meta{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.item-meta .dot{color:var(--ketchup)}
 .score{font-family:var(--display);font-weight:800;font-size:1.6rem;font-variant-numeric:tabular-nums;color:var(--ketchup)}
-.item .row{grid-column:1/-1}
-.badge{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--mustard-soft);color:var(--mustard);font-weight:600}
-.badge.new{background:var(--ketchup-soft);color:var(--ketchup)}
 .empty-list{color:var(--muted);font-size:.95rem}
+
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.ph{position:relative;aspect-ratio:1}
+.ph img{width:100%;height:100%;object-fit:cover;border-radius:6px;display:block;cursor:zoom-in;background:var(--line)}
+.ph .rm{position:absolute;top:4px;right:4px;min-width:34px;height:34px;padding:0 10px;border-radius:999px;border:none;background:var(--scrim);color:var(--on-scrim);font:600 .85rem var(--body);cursor:pointer}
+.addph{aspect-ratio:1;border:1.5px dashed var(--muted);border-radius:6px;display:grid;place-items:center;cursor:pointer;color:var(--muted);font-weight:600;text-align:center;position:relative}
+.addph:focus-within{outline:2px solid var(--mustard);outline-offset:2px}
 
 .finish{border:2px dashed var(--ink)}
 #code{font-family:var(--mono);font-size:.78rem;min-height:110px;word-break:break-all}
 .check{display:flex;gap:8px;align-items:center;font-size:.92rem;min-height:34px}
 .check input{width:20px;height:20px;accent-color:var(--mustard)}
 a{color:var(--mustard)}
+
+.lightbox{position:fixed;inset:0;z-index:10;background:var(--scrim-strong);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))}
+.lightbox img{max-width:100%;max-height:82vh;object-fit:contain;border-radius:6px}
+
 /* Rocky drifts across the top while spinning. The 106px box fits the image's diagonal so corners never clip mid-spin;
    the mover is (track - box) wide, so translating it 100% lands the box flush right */
-.rocky-track{height:106px;overflow:hidden}
+.rocky-track{max-width:760px;margin:0 auto 12px;height:106px;overflow:hidden}
 .rocky-mover{width:calc(100% - 106px);animation:rocky-drift 7s ease-in-out infinite alternate}
 .rocky-mover img{display:block;width:69px;height:80px;margin:13px 18.5px;animation:rocky-spin 4s linear infinite}
 @keyframes rocky-drift{from{transform:translateX(0)}to{transform:translateX(100%)}}
@@ -125,60 +146,9 @@ a{color:var(--mustard)}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="rocky-track" aria-hidden="true"><div class="rocky-mover"><img src="img/rocky.png" alt="" width="69" height="80"></div></div>
-  <header>
-    <span class="eyebrow">Review log · Field notes</span>
-    <h1>Log a <em>meal</em></h1>
-    <p class="lede">Score each meal you eat out. Every few meals, tap Send.</p>
-  </header>
-
-  <section id="form">
-    <div class="sec-head"><span class="num" id="formNum">+</span><div><h2 id="formTitle">New review</h2><p>How did <b>this meal</b> do in each one? Skip any that don't apply.</p></div></div>
-    <div class="grid2">
-      <div class="field"><label for="rest">Restaurant</label><input type="text" id="rest" autocomplete="off" placeholder="Where"></div>
-      <div class="field"><label for="dish">Dish</label><input type="text" id="dish" autocomplete="off" placeholder="What you ordered"></div>
-      <div class="field"><label for="date">Date</label><input type="date" id="date"></div>
-      <div class="field"><label for="price">Price paid ($)</label><input type="text" id="price" inputmode="decimal" autocomplete="off" placeholder="Optional"></div>
-    </div>
-    <div class="group">
-      <div class="group-head"><h3>The food</h3></div>
-      <div class="sliders" id="sl-food"></div>
-    </div>
-    <div class="group">
-      <div class="group-head"><h3>The restaurant</h3><span>Skip these for takeout</span></div>
-      <div class="sliders" id="sl-rest"></div>
-    </div>
-    <div class="group">
-      <div class="field"><span class="lbl">Anything ruin it? Tap <u>all</u> that happened.</span><div class="chips" id="deal"></div></div>
-    </div>
-    <div class="overall">
-      <div class="sl-top"><label for="o">Your overall score</label><button class="val empty" type="button" id="ov" aria-label="Overall score">Drag to rate</button></div>
-      <input type="range" id="o" min="0" max="10" step="0.1" value="5" class="unset">
-      <div class="cap"><span>Never again</span><span>All-timer</span></div>
-    </div>
-    <div class="field"><label for="note">Notes</label><textarea id="note" placeholder="Anything that stood out, good or bad"></textarea></div>
-    <div class="row"><button class="btn" id="save" type="button">Save review</button><button class="btn ghost" id="cancel" type="button" hidden>Cancel edit</button><span class="status" id="formMsg" aria-live="polite"></span></div>
-  </section>
-
-  <section id="saved">
-    <div class="sec-head"><span class="num" id="count">0</span><div><h2>Your reviews</h2><p id="savedSub">Newest first.</p></div></div>
-    <div class="list" id="list"></div>
-  </section>
-
-  <section class="finish" id="send">
-    <div class="sec-head"><span class="num">✓</span><div><h2>Send It</h2><p>Makes one code with every review you haven't sent yet. Text it to me.</p></div></div>
-    <label class="check"><input type="checkbox" id="all"> Include reviews I already sent</label>
-    <div class="row"><button class="btn" id="gen" type="button">Make my code</button></div>
-    <p class="status" id="sendMsg" aria-live="polite"></p>
-    <div class="field" id="result" hidden>
-      <textarea id="code" readonly aria-label="Your code"></textarea>
-      <div class="row"><button class="btn" id="share" type="button" hidden>Send</button><button class="btn" id="copy" type="button">Copy code</button><span class="status" id="copied" aria-live="polite"></span></div>
-      <button class="btn ghost small" id="markSent" type="button" style="align-self:flex-start">I sent it, mark these as sent</button>
-    </div>
-  </section>
-  <p class="hint">Haven't taken the palate quiz yet? <a href="./">Start there</a>.</p>
-</div>
+<div class="rocky-track" aria-hidden="true"><div class="rocky-mover"><img src="img/rocky.png" alt="" width="69" height="80"></div></div>
+<main id="view"></main>
+<div class="lightbox" id="lb" hidden role="dialog" aria-label="Photo"><img id="lbimg" alt=""><button class="btn" id="lbclose" type="button">Close</button></div>
 
 <script>
 // Category keys must match index.html and tools/decode_log.py
@@ -201,126 +171,321 @@ const REST=[
 ];
 const DEALS=[...FOOD.filter(c=>c.k!=="crave").map(c=>({k:c.k,n:c.n})),{k:"cold",n:"Food arriving cold"},{k:"cleanliness",n:"Dirty restaurant"},{k:"rude",n:"Rude service"}];
 
-const KEY="jack-vibe-log-v1",DRAFT="jack-vibe-log-draft-v1";
+// v2 groups dishes under restaurants. v1 (flat reviews) is migrated once and left in place as a backup
+const KEY="jack-vibe-log-v2",OLD="jack-vibe-log-v1",DRAFT="jack-vibe-log-draft-v2";
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||"null")??d}catch(e){return d}};
 const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-let reviews=load(KEY,[]);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
-const blank=()=>({rest:"",dish:"",date:today(),price:"",f:{},r:{},deal:[],o:null,note:""});
-let draft=Object.assign(blank(),load(DRAFT,{})),editing=null;
-const saveDraft=()=>store(DRAFT,draft);
+const fmt=v=>v==null?"–":v.toFixed(1);
+const plural=(n,w,ws)=>`${n} ${n===1?w:(ws||w+"s")}`;
+
+let db=load(KEY,null);
+if(!db){db={places:[],reviews:[]};migrate(load(OLD,[]));persist()}
+function persist(){store(KEY,db)}
+function migrate(old){
+  const byName={};
+  [...old].sort((a,b)=>(a.date||"").localeCompare(b.date||"")).forEach(o=>{
+    const name=(o.rest||"").trim()||"Unnamed";
+    let p=byName[name.toLowerCase()];
+    if(!p){p=byName[name.toLowerCase()]={id:uid(),name,r:{},photos:[],sent:false};db.places.push(p)}
+    Object.assign(p.r,o.r||{}); // oldest first, so the latest visit's restaurant scores win
+    db.reviews.push({id:o.id,place:p.id,dish:o.dish||"",date:o.date||today(),price:o.price,f:o.f||{},deal:o.deal||[],o:o.o,note:o.note||"",photos:[],sent:!!o.sent});
+  });
+}
+const place=id=>db.places.find(p=>p.id===id);
+const review=id=>db.reviews.find(r=>r.id===id);
+const dishesOf=pid=>db.reviews.filter(r=>r.place===pid).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id.localeCompare(a.id));
+
+// Photos live only on this phone, in IndexedDB as a 1600px copy plus a small thumbnail. They are never sent
+const idb=new Promise((res,rej)=>{
+  try{const q=indexedDB.open("vibe-log-photos",1);q.onupgradeneeded=()=>q.result.createObjectStore("p");q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}catch(e){rej(e)}
+});
+let photosOK=true;idb.catch(()=>{photosOK=false});
+const tx=(mode,fn)=>idb.then(d=>new Promise((res,rej)=>{const t=d.transaction("p",mode);const out=fn(t.objectStore("p"));t.oncomplete=()=>res(out&&out.result);t.onerror=()=>rej(t.error)}));
+const getPhoto=id=>tx("readonly",s=>s.get(id));
+const putPhoto=(id,rec)=>tx("readwrite",s=>{s.put(rec,id)});
+const delPhotos=ids=>ids.length?tx("readwrite",s=>{ids.forEach(id=>s.delete(id))}).catch(()=>{}):Promise.resolve();
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+
+function loadImg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>{res(i);URL.revokeObjectURL(u)};i.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("bad image"))};i.src=u})}
+function shrink(img,max,q){
+  const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+  return new Promise(r=>c.toBlob(r,"image/jpeg",q));
+}
+async function savePhotos(files){
+  const ids=[];let failed=0;
+  for(const f of files){
+    try{const img=await loadImg(f);const id=uid();await putPhoto(id,{full:await shrink(img,1600,.82),thumb:await shrink(img,360,.75)});ids.push(id)}
+    catch(e){failed++}
+  }
+  return {ids,failed};
+}
+const thumbURLs=new Map();
+function hydrate(root=document){
+  root.querySelectorAll("img[data-photo]:not([src])").forEach(async im=>{
+    const id=im.dataset.photo;
+    if(!thumbURLs.has(id)){const rec=await getPhoto(id).catch(()=>null);if(!rec)return;thumbURLs.set(id,URL.createObjectURL(rec.thumb))}
+    im.src=thumbURLs.get(id);
+  });
+}
+let lbURL=null;
+async function openPhoto(id){
+  const rec=await getPhoto(id).catch(()=>null);if(!rec)return;
+  lbURL=URL.createObjectURL(rec.full);$("lbimg").src=lbURL;$("lb").hidden=false;$("lbclose").focus();
+}
+function closePhoto(){$("lb").hidden=true;$("lbimg").removeAttribute("src");if(lbURL){URL.revokeObjectURL(lbURL);lbURL=null}}
+$("lbclose").addEventListener("click",closePhoto);
+$("lb").addEventListener("click",e=>{if(e.target===$("lb"))closePhoto()});
+addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("lb").hidden)closePhoto()});
+
+// A photo grid: ids is the array it edits, onRemove decides whether a removal deletes now or on save
+function photosHTML(ids,label){
+  return `<div class="field"><span class="lbl">${label}</span>${photosOK?`<div class="thumbs">${ids.map(id=>`<span class="ph"><img data-photo="${id}" alt="Photo" data-open="${id}"><button type="button" class="rm" data-rm="${id}" aria-label="Remove photo">×</button></span>`).join("")}<label class="addph">+ Add<br>photos<input class="vh" type="file" accept="image/*" multiple data-add></label></div><span class="hint" data-phmsg>Saved on your phone only. Not sent.</span>`:`<span class="hint">Photos aren't available in this browser.</span>`}</div>`;
+}
+// discardIfGone: a form that was cancelled or left while photos were still processing must not keep them
+function bindPhotos(box,ids,{onAdd,onRemove,redraw,discardIfGone}){
+  if(!photosOK)return;
+  box.querySelector("[data-add]").addEventListener("change",async e=>{
+    const files=[...e.target.files];if(!files.length)return;
+    const msg=box.querySelector("[data-phmsg]");msg.textContent=`Adding ${plural(files.length,"photo")}…`;
+    const {ids:added,failed}=await savePhotos(files);
+    if(discardIfGone&&!box.isConnected){delPhotos(added);return}
+    ids.push(...added);onAdd(added);if(box.isConnected)redraw();
+    if(failed){const m=box.querySelector("[data-phmsg]");m.textContent=`${plural(failed,"photo")} couldn't be added.`}
+  });
+  box.querySelectorAll("[data-open]").forEach(im=>im.addEventListener("click",()=>openPhoto(im.dataset.open)));
+  box.querySelectorAll("[data-rm]").forEach(b=>{
+    let armed=false;
+    b.addEventListener("click",()=>{
+      if(!armed){armed=true;b.textContent="Remove?";setTimeout(()=>{armed=false;b.textContent="×"},3000);return}
+      const i=ids.indexOf(b.dataset.rm);if(i>=0)ids.splice(i,1);onRemove(b.dataset.rm);redraw();
+    });
+  });
+  hydrate(box);
+}
 
 // Sliders stay unset until moved, so a skipped category is never recorded as a score
-function slider(c,host,bag){
-  const d=document.createElement("div");d.className="sl";
-  d.innerHTML=`<div class="sl-top"><label for="s-${c.k}">${c.n} <small>${c.d}</small></label><button class="val" type="button" id="v-${c.k}" aria-label="${c.n} score, tap to clear"></button></div><input type="range" id="s-${c.k}" min="0" max="10" step="0.1"><div class="cap"><span>Bad</span><span>Perfect</span></div>`;
-  host.append(d);
-  const inp=d.querySelector("input"),out=d.querySelector("button");
-  inp.addEventListener("input",()=>{draft[bag][c.k]=+inp.value;paint(c.k,draft[bag][c.k],inp,out);saveDraft()});
-  out.addEventListener("click",()=>{delete draft[bag][c.k];paint(c.k,null,inp,out);saveDraft()});
-}
-function paint(k,v,inp,out){
+function sliderHTML(c,v){
   const has=v!=null;
-  if(has)inp.value=v;else inp.value=5;
-  inp.classList.toggle("unset",!has);out.classList.toggle("empty",!has);
-  out.textContent=has?v.toFixed(1):"skip";
+  return `<div class="sl" data-k="${c.k}"><div class="sl-top"><label for="s-${c.k}">${c.n} <small>${c.d}</small></label><button class="val${has?"":" empty"}" type="button" aria-label="${c.n} score, tap to clear">${has?v.toFixed(1):"skip"}</button></div><input type="range" id="s-${c.k}" min="0" max="10" step="0.1" value="${has?v:5}" class="${has?"":"unset"}"><div class="cap"><span>Bad</span><span>Perfect</span></div></div>`;
 }
-FOOD.forEach(c=>slider(c,$("sl-food"),"f"));
-REST.forEach(c=>slider(c,$("sl-rest"),"r"));
-DEALS.forEach(x=>{
-  const w=document.createElement("span");w.className="chip";
-  w.innerHTML=`<input type="checkbox" id="d-${x.k}"><label for="d-${x.k}">${x.n}</label>`;
-  w.querySelector("input").addEventListener("change",e=>{draft.deal=e.target.checked?[...new Set([...draft.deal,x.k])]:draft.deal.filter(k=>k!==x.k);saveDraft()});
-  $("deal").append(w);
-});
-function paintOverall(){
-  const v=draft.o,has=v!=null;
-  $("o").value=has?v:5;$("o").classList.toggle("unset",!has);
-  $("ov").classList.toggle("empty",!has);$("ov").textContent=has?v.toFixed(1):"Drag to rate";
+function bindSliders(root,obj,onChange){
+  root.querySelectorAll(".sl").forEach(d=>{
+    const k=d.dataset.k,inp=d.querySelector("input"),out=d.querySelector(".val");
+    const paint=()=>{const has=obj[k]!=null;inp.value=has?obj[k]:5;inp.classList.toggle("unset",!has);out.classList.toggle("empty",!has);out.textContent=has?obj[k].toFixed(1):"skip"};
+    inp.addEventListener("input",()=>{obj[k]=+inp.value;paint();onChange()});
+    out.addEventListener("click",()=>{delete obj[k];paint();onChange()});
+  });
 }
-$("o").addEventListener("input",e=>{draft.o=+e.target.value;paintOverall();saveDraft()});
-$("ov").addEventListener("click",()=>{draft.o=null;paintOverall();saveDraft()});
-["rest","dish","date","price","note"].forEach(k=>$(k).addEventListener("input",e=>{draft[k]=e.target.value;saveDraft()}));
-
-function fillForm(){
-  ["rest","dish","date","price","note"].forEach(k=>$(k).value=draft[k]??"");
-  FOOD.forEach(c=>paint(c.k,draft.f[c.k],$("s-"+c.k),$("v-"+c.k)));
-  REST.forEach(c=>paint(c.k,draft.r[c.k],$("s-"+c.k),$("v-"+c.k)));
-  DEALS.forEach(x=>$("d-"+x.k).checked=draft.deal.includes(x.k));
-  paintOverall();
-  $("formTitle").textContent=editing?"Edit review":"New review";$("formNum").textContent=editing?"✎":"+";
-  $("save").textContent=editing?"Update review":"Save review";$("cancel").hidden=!editing;
-}
-
-$("save").addEventListener("click",()=>{
-  const msg=$("formMsg");msg.className="status warn";
-  if(!draft.rest.trim()&&!draft.dish.trim()){msg.textContent="Add the restaurant or the dish first.";return}
-  if(draft.o==null){msg.textContent="Give it an overall score first.";$("o").focus();return}
-  const price=parseFloat(String(draft.price).replace(/[^0-9.]/g,""));
-  const r={rest:draft.rest.trim(),dish:draft.dish.trim(),date:draft.date||today(),f:{...draft.f},r:{...draft.r},deal:[...draft.deal],o:draft.o,note:draft.note.trim()};
-  if(!isNaN(price))r.price=price;
-  if(editing){const i=reviews.findIndex(x=>x.id===editing);if(i>=0)reviews[i]={...r,id:editing,sent:false}}
-  else reviews.push({...r,id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),sent:false});
-  store(KEY,reviews);
-  msg.className="status";msg.textContent=editing?"Updated.":"Saved. Nice.";
-  editing=null;draft=blank();saveDraft();fillForm();renderList();
-  setTimeout(()=>{if(msg.textContent==="Saved. Nice."||msg.textContent==="Updated.")msg.textContent=""},3000);
-});
-$("cancel").addEventListener("click",()=>{editing=null;draft=blank();saveDraft();fillForm();$("formMsg").textContent=""});
-
-function renderList(){
-  const L=$("list"),unsent=reviews.filter(r=>!r.sent).length;
-  $("count").textContent=reviews.length;
-  $("savedSub").textContent=reviews.length?`Newest first. ${unsent} not sent yet.`:"Newest first.";
-  if(!reviews.length){L.innerHTML=`<p class="empty-list">No reviews yet. Your first one will show up here.</p>`;return}
-  L.innerHTML="";
-  [...reviews].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id.localeCompare(a.id)).forEach(r=>{
-    const d=document.createElement("div");d.className="item";
-    d.innerHTML=`<div class="item-main"><b>${esc(r.dish||r.rest)}</b><span class="item-meta">${esc([r.dish?r.rest:"",r.date,r.price!=null?"$"+r.price:""].filter(Boolean).join(" · "))}</span></div><span class="score">${r.o.toFixed(1)}</span><div class="row"><span class="badge ${r.sent?"":"new"}">${r.sent?"Sent":"Not sent"}</span><button class="btn ghost small" type="button" data-a="edit">Edit</button><button class="btn ghost small" type="button" data-a="del">Delete</button></div>`;
-    d.querySelector('[data-a="edit"]').addEventListener("click",()=>{
-      editing=r.id;draft={...blank(),...r,f:{...r.f},r:{...r.r},deal:[...r.deal],price:r.price??""};
-      fillForm();$("formMsg").textContent="";$("form").scrollIntoView({behavior:"smooth",block:"start"});
-    });
-    const del=d.querySelector('[data-a="del"]');let armed=false;
-    del.addEventListener("click",()=>{
-      if(!armed){armed=true;del.textContent="Tap again to delete";setTimeout(()=>{armed=false;del.textContent="Delete"},4000);return}
-      reviews=reviews.filter(x=>x.id!==r.id);store(KEY,reviews);
-      if(editing===r.id){editing=null;draft=blank();saveDraft();fillForm()}
-      renderList();
-    });
-    L.append(d);
+function twoTap(btn,label,fn){
+  let armed=false;const orig=btn.textContent;
+  btn.addEventListener("click",()=>{
+    if(!armed){armed=true;btn.textContent=label;setTimeout(()=>{armed=false;btn.textContent=orig},4000);return}
+    fn();
   });
 }
 
-let batch=[];
-$("gen").addEventListener("click",()=>{
-  batch=reviews.filter(r=>$("all").checked||!r.sent);
-  const m=$("sendMsg");
-  if(!batch.length){m.className="status warn";m.textContent=reviews.length?"Everything's already sent. Tick the box above to send it again.":"No reviews to send yet.";$("result").hidden=true;return}
-  const payload={v:1,r:batch.map(({sent,...r})=>r)};
-  $("code").value="JACKLOG1."+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-  m.className="status";m.textContent=`Code ready with ${batch.length} review${batch.length>1?"s":""}.`;
-  $("copied").textContent="";$("result").hidden=false;
-});
-function markSent(){
-  const ids=new Set(batch.map(r=>r.id));
-  reviews.forEach(r=>{if(ids.has(r.id))r.sent=true});store(KEY,reviews);renderList();
+const view=$("view");
+function render(){
+  closePhoto();
+  const [a,b,c]=location.hash.slice(1).split("/");
+  if(a==="p"&&place(b)){c==="dish"?dishView(place(b),null):placeView(place(b))}
+  else if(a==="d"&&review(b)&&place(review(b).place))dishView(place(review(b).place),review(b));
+  else homeView();
+  window.scrollTo(0,0);
 }
-$("markSent").addEventListener("click",()=>{markSent();$("copied").textContent="Marked as sent."});
-$("copy").addEventListener("click",()=>{
-  const t=$("code");
-  const fallback=()=>{t.focus();t.select();$("copied").textContent="Selected. Long-press and copy to finish."};
-  try{navigator.clipboard.writeText(t.value).then(()=>{$("copied").textContent="Copied. Paste it into a text to me, then tap the button below."},fallback)}catch(e){fallback()}
-});
-if(navigator.share){$("share").hidden=false;$("copy").classList.add("ghost")}
-$("share").addEventListener("click",async()=>{
-  try{await navigator.share({title:"Vibe Log reviews",text:$("code").value});markSent();$("copied").textContent="Sent and marked."}
-  catch(e){if(e&&e.name!=="AbortError")$("copied").textContent="Sharing didn't work. Use Copy code instead."}
-});
+addEventListener("hashchange",render);
 
-fillForm();renderList();
+// Home: new restaurant, the folder list, and the send box
+function folderHTML(p){
+  const ds=dishesOf(p.id);
+  const cover=p.photos[0]||ds.flatMap(r=>r.photos||[])[0];
+  const avg=ds.length?ds.reduce((s,r)=>s+r.o,0)/ds.length:null;
+  const unsent=!p.sent||ds.some(r=>!r.sent);
+  return `<a class="folder" href="#p/${p.id}">${cover?`<img class="thumb" data-photo="${cover}" alt="">`:`<span class="thumb">${esc((p.name[0]||"?").toUpperCase())}</span>`}<span class="item-main"><b>${esc(p.name)}</b><span class="item-meta">${plural(ds.length,"dish","dishes")}${ds.length?" · "+esc(ds[0].date):""}${unsent?' · <span class="dot">not sent</span>':""}</span></span>${avg!=null?`<span class="score" aria-label="Average ${avg.toFixed(1)}">${avg.toFixed(1)}</span>`:""}</a>`;
+}
+const lastDate=p=>(dishesOf(p.id)[0]||{}).date||"";
+function homeView(){
+  view.innerHTML=`
+  <header>
+    <span class="eyebrow">Review log · Field notes</span>
+    <h1>Log a <em>meal</em></h1>
+    <p class="lede">Pick a restaurant, or add a new one. Every few meals, tap Send.</p>
+  </header>
+  <section>
+    <div class="sec-head"><span class="num">+</span><div><h2>New restaurant</h2></div></div>
+    <div class="row add-row"><input type="text" id="newName" placeholder="Restaurant name" autocomplete="off" aria-label="Restaurant name"><button class="btn" id="addPlace" type="button">Add</button></div>
+    <p class="status warn" id="addMsg" aria-live="polite"></p>
+  </section>
+  <section>
+    <div class="sec-head"><span class="num" id="pcount"></span><div><h2>Your restaurants</h2><p>Tap one to add dishes.</p></div></div>
+    <div class="list" id="folders"></div>
+  </section>
+  <section class="finish">
+    <div class="sec-head"><span class="num">✓</span><div><h2>Send It</h2><p>Makes one code with every review you haven't sent yet. Text it to me. Photos stay on your phone.</p></div></div>
+    <label class="check"><input type="checkbox" id="all"> Include reviews I already sent</label>
+    <div class="row"><button class="btn" id="gen" type="button">Make my code</button></div>
+    <p class="status" id="sendMsg" aria-live="polite"></p>
+    <div class="field" id="result" hidden>
+      <textarea id="code" readonly aria-label="Your code"></textarea>
+      <div class="row"><button class="btn" id="share" type="button" hidden>Send</button><button class="btn" id="copy" type="button">Copy code</button><span class="status" id="copied" aria-live="polite"></span></div>
+      <button class="btn ghost small" id="markSent" type="button" style="align-self:flex-start">I sent it, mark these as sent</button>
+    </div>
+  </section>
+  <p class="hint">Haven't taken the palate quiz yet? <a href="./">Start there</a>.</p>`;
+  drawFolders();
+  const add=()=>{
+    const n=$("newName").value.trim();
+    if(!n){$("addMsg").textContent="Type the restaurant name first.";return}
+    const ex=db.places.find(p=>p.name.trim().toLowerCase()===n.toLowerCase());
+    if(ex){location.hash="p/"+ex.id;return}
+    const p={id:uid(),name:n,r:{},photos:[],sent:false};db.places.push(p);persist();location.hash="p/"+p.id;
+  };
+  $("addPlace").addEventListener("click",add);
+  $("newName").addEventListener("keydown",e=>{if(e.key==="Enter")add()});
+  bindSend();
+}
+function drawFolders(){
+  const ps=[...db.places].sort((x,y)=>lastDate(y).localeCompare(lastDate(x))||x.name.localeCompare(y.name));
+  $("pcount").textContent=ps.length;
+  $("folders").innerHTML=ps.map(folderHTML).join("")||`<p class="empty-list">No restaurants yet. Add the first one above.</p>`;
+  hydrate($("folders"));
+}
+
+let batch={r:[],p:[]};
+function bindSend(){
+  $("gen").addEventListener("click",()=>{
+    const all=$("all").checked,m=$("sendMsg");
+    const rs=db.reviews.filter(r=>all||!r.sent);
+    const pids=new Set(rs.map(r=>r.place));
+    db.places.forEach(p=>{if(all||!p.sent)pids.add(p.id)});
+    if(!rs.length&&!pids.size){m.className="status warn";m.textContent=db.reviews.length?"Everything's already sent. Tick the box above to send it again.":"Nothing to send yet.";$("result").hidden=true;return}
+    batch={r:rs.map(r=>r.id),p:[...pids]};
+    const payload={v:2,p:batch.p.map(id=>{const p=place(id);return {id:p.id,name:p.name,r:p.r}}),r:rs.map(({sent,photos,...r})=>r)};
+    $("code").value="JACKLOG2."+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    m.className="status";m.textContent=`Code ready with ${[rs.length?plural(rs.length,"dish","dishes"):"",batch.p.length?plural(batch.p.length,"restaurant"):""].filter(Boolean).join(" and ")}.`;
+    $("copied").textContent="";$("result").hidden=false;
+  });
+  const markSent=()=>{
+    const r=new Set(batch.r),p=new Set(batch.p);
+    db.reviews.forEach(x=>{if(r.has(x.id))x.sent=true});db.places.forEach(x=>{if(p.has(x.id))x.sent=true});
+    persist();drawFolders();
+  };
+  $("markSent").addEventListener("click",()=>{markSent();$("copied").textContent="Marked as sent."});
+  $("copy").addEventListener("click",()=>{
+    const t=$("code");
+    const fallback=()=>{t.focus();t.select();$("copied").textContent="Selected. Long-press and copy to finish."};
+    try{navigator.clipboard.writeText(t.value).then(()=>{$("copied").textContent="Copied. Paste it into a text to me, then tap the button below."},fallback)}catch(e){fallback()}
+  });
+  if(navigator.share){$("share").hidden=false;$("copy").classList.add("ghost")}
+  $("share").addEventListener("click",async()=>{
+    try{await navigator.share({title:"Vibe Log reviews",text:$("code").value});markSent();$("copied").textContent="Sent and marked."}
+    catch(e){if(e&&e.name!=="AbortError")$("copied").textContent="Sharing didn't work. Use Copy code instead."}
+  });
+}
+
+// Restaurant: name, photos, restaurant scores (asked once, editable later), and its dishes
+function placeView(p){
+  const ds=dishesOf(p.id),rated=Object.keys(p.r).length>0;
+  view.innerHTML=`
+  <a class="back" href="#">‹ All restaurants</a>
+  <section>
+    <div class="field"><label for="pname">Restaurant</label><input type="text" id="pname" value="${esc(p.name)}" autocomplete="off"></div>
+    <div id="pphotos"></div>
+    <div class="group">
+      <div class="group-head"><h3>The restaurant</h3>${rated?`<button class="btn ghost small" id="editR" type="button">Edit</button>`:""}</div>
+      ${rated?`<p class="summary" id="rsum"></p>`:`<p class="hint">Rate the place once. You can change it later.</p>`}
+      <div class="sliders" id="rsl"${rated?" hidden":""}>${REST.map(c=>sliderHTML(c,p.r[c.k])).join("")}</div>
+    </div>
+  </section>
+  <section>
+    <div class="sec-head"><span class="num">${ds.length}</span><div><h2>Dishes</h2></div></div>
+    <a class="btn" href="#p/${p.id}/dish">+ Add a dish</a>
+    <div class="list" id="dishes">${ds.map(r=>`<a class="folder" href="#d/${r.id}">${(r.photos||[])[0]?`<img class="thumb" data-photo="${r.photos[0]}" alt="">`:`<span class="thumb">${esc((r.dish[0]||"?").toUpperCase())}</span>`}<span class="item-main"><b>${esc(r.dish||"Untitled dish")}</b><span class="item-meta">${esc([r.date,r.price!=null?"$"+r.price:""].filter(Boolean).join(" · "))}${r.sent?"":' · <span class="dot">not sent</span>'}</span></span><span class="score">${r.o.toFixed(1)}</span></a>`).join("")||'<p class="empty-list">No dishes yet.</p>'}</div>
+  </section>
+  <div class="row"><button class="btn ghost small" id="delPlace" type="button">Delete restaurant</button></div>`;
+  const touched=()=>{p.sent=false;persist()};
+  const drawSummary=()=>{if($("rsum"))$("rsum").innerHTML=REST.map(c=>`<span>${c.n} <b>${fmt(p.r[c.k])}</b></span>`).join("")};
+  drawSummary();
+  $("pname").addEventListener("change",e=>{const n=e.target.value.trim();if(!n){e.target.value=p.name;return}p.name=n;touched()});
+  const drawPhotos=()=>{$("pphotos").innerHTML=photosHTML(p.photos,"Photos of the place");bindPhotos($("pphotos"),p.photos,{onAdd:()=>persist(),onRemove:id=>{persist();delPhotos([id])},redraw:drawPhotos})};
+  drawPhotos();
+  bindSliders($("rsl"),p.r,()=>{touched();drawSummary()});
+  if(rated)$("editR").addEventListener("click",e=>{const open=$("rsl").hidden;$("rsl").hidden=!open;e.target.textContent=open?"Done":"Edit"});
+  hydrate($("dishes"));
+  twoTap($("delPlace"),`Tap again to delete ${plural(ds.length,"dish","dishes")} too`,()=>{
+    delPhotos([...p.photos,...ds.flatMap(r=>r.photos||[])]);
+    db.reviews=db.reviews.filter(r=>r.place!==p.id);db.places=db.places.filter(x=>x.id!==p.id);persist();
+    location.replace("#");
+  });
+}
+
+// Dish form. Photos added here are deleted if the form is cancelled; removals only happen on save
+function dishView(p,r){
+  const route=location.hash,d=load(DRAFT,null),resume=d&&d.route===route;
+  const form=resume?d.form:r?JSON.parse(JSON.stringify({...r,price:r.price??""})):{dish:"",date:today(),price:"",f:{},deal:[],o:null,note:"",photos:[]};
+  form.photos=form.photos||[];
+  const added=resume?d.added||[]:[],removed=resume?d.removed||[]:[];
+  const keep=()=>store(DRAFT,{route,form,added,removed});
+  view.innerHTML=`
+  <button class="back" type="button" id="back">‹ ${esc(p.name)}</button>
+  <section>
+    <div class="sec-head"><span class="num">${r?"✎":"+"}</span><div><h2>${r?"Edit dish":"Add a dish"}</h2><p>How did <b>this dish</b> do in each one? Skip any that don't apply.</p></div></div>
+    <div class="grid2">
+      <div class="field"><label for="dish">Dish</label><input type="text" id="dish" autocomplete="off" placeholder="What you ordered"></div>
+      <div class="field"><label for="date">Date</label><input type="date" id="date"></div>
+      <div class="field"><label for="price">Price ($)</label><input type="text" id="price" inputmode="decimal" autocomplete="off" placeholder="Optional"></div>
+    </div>
+    <div id="dphotos"></div>
+    <div class="group">
+      <div class="group-head"><h3>The food</h3></div>
+      <div class="sliders" id="fsl">${FOOD.map(c=>sliderHTML(c,form.f[c.k])).join("")}</div>
+    </div>
+    <div class="group">
+      <div class="field"><span class="lbl">Anything ruin it? Tap <u>all</u> that happened.</span><div class="chips">${DEALS.map(x=>`<span class="chip"><input type="checkbox" id="d-${x.k}" data-deal="${x.k}"${form.deal.includes(x.k)?" checked":""}><label for="d-${x.k}">${x.n}</label></span>`).join("")}</div></div>
+    </div>
+    <div class="overall">
+      <div class="sl-top"><label for="o">Your overall score</label><button class="val" type="button" id="ov" aria-label="Overall score, tap to clear"></button></div>
+      <input type="range" id="o" min="0" max="10" step="0.1">
+      <div class="cap"><span>Never again</span><span>All-timer</span></div>
+    </div>
+    <div class="field"><label for="note">Notes</label><textarea id="note" placeholder="Anything that stood out, good or bad"></textarea></div>
+    <div class="row"><button class="btn" id="save" type="button">${r?"Update dish":"Save dish"}</button><button class="btn ghost" id="cancel" type="button">Cancel</button><span class="status warn" id="formMsg" aria-live="polite"></span></div>
+    ${r?'<div class="row"><button class="btn ghost small" id="delDish" type="button">Delete dish</button></div>':""}
+  </section>`;
+  ["dish","date","price","note"].forEach(k=>{$(k).value=form[k]??"";$(k).addEventListener("input",e=>{form[k]=e.target.value;keep()})});
+  const drawPhotos=()=>{$("dphotos").innerHTML=photosHTML(form.photos,"Photos");bindPhotos($("dphotos"),form.photos,{onAdd:ids=>{added.push(...ids);keep()},onRemove:id=>{const i=added.indexOf(id);if(i>=0){added.splice(i,1);delPhotos([id])}else removed.push(id);keep()},redraw:drawPhotos,discardIfGone:true})};
+  drawPhotos();
+  bindSliders($("fsl"),form.f,keep);
+  view.querySelectorAll("[data-deal]").forEach(cb=>cb.addEventListener("change",()=>{const k=cb.dataset.deal;form.deal=cb.checked?[...new Set([...form.deal,k])]:form.deal.filter(x=>x!==k);keep()}));
+  const paintO=()=>{const has=form.o!=null;$("o").value=has?form.o:5;$("o").classList.toggle("unset",!has);$("ov").classList.toggle("empty",!has);$("ov").textContent=has?form.o.toFixed(1):"Drag to rate"};
+  paintO();
+  $("o").addEventListener("input",e=>{form.o=+e.target.value;paintO();keep()});
+  $("ov").addEventListener("click",()=>{form.o=null;paintO();keep()});
+  const leave=()=>{store(DRAFT,null);location.replace("#p/"+p.id)};
+  const cancel=()=>{delPhotos(added);leave()};
+  $("back").addEventListener("click",cancel);$("cancel").addEventListener("click",cancel);
+  $("save").addEventListener("click",()=>{
+    const msg=$("formMsg");
+    if(!String(form.dish).trim()){msg.textContent="Add the dish name first.";$("dish").focus();return}
+    if(form.o==null){msg.textContent="Give it an overall score first.";$("o").focus();return}
+    const price=parseFloat(String(form.price).replace(/[^0-9.]/g,""));
+    const rec={id:r?r.id:uid(),place:p.id,dish:String(form.dish).trim(),date:form.date||today(),f:{...form.f},deal:[...form.deal],o:form.o,note:String(form.note||"").trim(),photos:[...form.photos],sent:false};
+    if(!isNaN(price))rec.price=price;
+    if(r)db.reviews[db.reviews.findIndex(x=>x.id===r.id)]=rec;else db.reviews.push(rec);
+    persist();delPhotos(removed);leave();
+  });
+  if(r)twoTap($("delDish"),"Tap again to delete",()=>{
+    delPhotos([...(r.photos||[]),...added]);db.reviews=db.reviews.filter(x=>x.id!==r.id);persist();leave();
+  });
+}
+
+render();
 if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 </script>
 </body>

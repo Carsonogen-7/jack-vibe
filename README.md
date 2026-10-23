@@ -67,12 +67,17 @@ The dish profiles behind `d1`–`d7` (1–5 per food category plus one restauran
 
 ## Review log
 
-`log.html` is for ongoing data. For each real meal Jack scores the 8 food categories and 4 restaurant factors (0.0–10.0, any can be skipped), ticks any dealbreakers that happened, and gives his own overall score. Reviews stay on his phone until he taps **Send**, which shares one code with every unsent review.
+`log.html` is for ongoing data. Restaurants are folders: the first time Jack adds a restaurant he rates it once (service, ambiance, speed, value; editable later, never re-prompted), then adds dishes to it. Each dish gets the 8 food categories (0.0–10.0, any can be skipped), any dealbreakers that happened, and his own overall score. He can attach photos to restaurants and dishes; they are stored on his phone only (IndexedDB) for browsing and are never sent. Data stays on his phone until he taps **Send**, which shares one code with every unsent dish and restaurant change. Older flat reviews (`jack-vibe-log-v1`) are migrated into folders by restaurant name on first load.
 
 ```bash
-python3 tools/decode_log.py "JACKLOG1...."
-python3 tools/decode_log.py --csv reviews.csv "JACKLOG1...."   # keeps a running dataset
+python3 tools/decode_log.py "JACKLOG2...."
+python3 tools/decode_log.py --csv ../data/reviews.csv "JACKLOG2...."   # keeps a running dataset
 ```
 
-Code format: `JACKLOG1.` + base64(UTF-8 JSON) of `{"v":1,"r":[review,...]}`, where each review is
-`{"id","date","rest","dish","price"?,"f":{food key: 0-10},"r":{restaurant key: 0-10},"deal":[...],"o":0-10,"note"}`. Skipped categories are left out.
+Keep the CSV outside this folder: the repo is public.
+
+Code format: `JACKLOG2.` + base64(UTF-8 JSON) of `{"v":2,"p":[place,...],"r":[dish,...]}`, where
+a place is `{"id","name","r":{restaurant key: 0-10}}` and a dish is
+`{"id","place","dish","date","price"?,"f":{food key: 0-10},"deal":[...],"o":0-10,"note"}`. Skipped categories are left out.
+`JACKLOG1.` codes (flat reviews with per-review restaurant scores) still decode. With `--csv`, restaurants are kept in
+`<csv name>_places.json` and their current scores are copied onto every dish row from that restaurant.
