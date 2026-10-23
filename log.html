@@ -316,21 +316,12 @@ function folderHTML(p){
 }
 const lastDate=p=>(dishesOf(p.id)[0]||{}).date||"";
 function homeView(){
-  // An empty log is usually a fresh home-screen install, so offer the restore right under the title
-  const empty=!db.places.length;
-  const restore=`<details class="restore"${empty?" open":""}>
-    <summary>Restore from a code</summary>
-    <p class="hint">${empty?"Used the Vibe Log before? Paste a code you sent me and your reviews come back.":"Lost your reviews? Paste a code you sent before and they come back. Dishes you already have aren't doubled."}</p>
-    <textarea id="restoreCode" placeholder="JACKLOG…" aria-label="Code to restore"></textarea>
-    <div class="row"><button class="btn ghost" id="restoreBtn" type="button">Restore</button><span class="status" id="restoreMsg" aria-live="polite"></span></div>
-  </details>`;
   view.innerHTML=`
   <header>
     <span class="eyebrow">Review log · Field notes</span>
     <h1>Log a <em>meal</em></h1>
     <p class="lede">Pick a restaurant, or add a new one. Every few meals, tap Send.</p>
   </header>
-  ${empty?restore:""}
   <section>
     <div class="sec-head"><span class="num">+</span><div><h2>New restaurant</h2></div></div>
     <div class="row add-row"><input type="text" id="newName" placeholder="Restaurant name" autocomplete="off" aria-label="Restaurant name"><button class="btn" id="addPlace" type="button">Add</button></div>
@@ -351,7 +342,12 @@ function homeView(){
       <button class="btn ghost small" id="markSent" type="button" style="align-self:flex-start">I sent it, mark these as sent</button>
     </div>
   </section>
-  ${empty?"":restore}
+  <details class="restore">
+    <summary>Restore from a code</summary>
+    <p class="hint">Lost your reviews? Paste a code you sent before and they come back. Dishes you already have aren't doubled.</p>
+    <textarea id="restoreCode" placeholder="JACKLOG…" aria-label="Code to restore"></textarea>
+    <div class="row"><button class="btn ghost" id="restoreBtn" type="button">Restore</button><span class="status" id="restoreMsg" aria-live="polite"></span></div>
+  </details>
   <p class="hint">Haven't taken the palate quiz yet? <a href="./">Start there</a>.</p>`;
   drawFolders();
   $("restoreBtn").addEventListener("click",()=>{
