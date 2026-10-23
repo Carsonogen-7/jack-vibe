@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F3F5F0" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#121714" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FBF4E6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C1410" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -21,18 +21,18 @@
 /* Layout: same scorecard look as the quiz. Form to log a meal, the saved list, then the send box */
 :root{
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
-  --bg:#F3F5F0; --card:#FFFFFF; --ink:#18211C; --muted:#5D6B63; --line:#D8DED8;
-  --tomato:#C9402A; --basil:#2E6A49; --basil-soft:#E1ECE4; --tomato-soft:#F6E1DC; --on-accent:#FFFFFF;
+  --bg:#FBF4E6; --card:#FFFDF8; --ink:#2B1B12; --muted:#6E5847; --line:#E6D8C0;
+  --ketchup:#B8322A; --mustard:#8A5B00; --mustard-bright:#E0A526; --mustard-soft:#F6E3AE; --ketchup-soft:#F8DDD6; --on-accent:#FFFFFF;
   --display:"Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
   --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#121714; --card:#1B221E; --ink:#E7ECE8; --muted:#9AA8A0; --line:#2E3832;
-  --tomato:#EE6B52; --basil:#6FC096; --basil-soft:#1F3328; --tomato-soft:#3A221D; color-scheme:dark}}
+  --bg:#1C1410; --card:#271D16; --ink:#F3E9DA; --muted:#B9A48E; --line:#3F3026;
+  --ketchup:#F07A68; --mustard:#E8B341; --mustard-bright:#E8B341; --mustard-soft:#3B2D12; --ketchup-soft:#41221C; --on-accent:#1C1410; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#121714; --card:#1B221E; --ink:#E7ECE8; --muted:#9AA8A0; --line:#2E3832;
-  --tomato:#EE6B52; --basil:#6FC096; --basil-soft:#1F3328; --tomato-soft:#3A221D; color-scheme:dark}
+  --bg:#1C1410; --card:#271D16; --ink:#F3E9DA; --muted:#B9A48E; --line:#3F3026;
+  --ketchup:#F07A68; --mustard:#E8B341; --mustard-bright:#E8B341; --mustard-soft:#3B2D12; --ketchup-soft:#41221C; --on-accent:#1C1410; color-scheme:dark}
 
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -41,12 +41,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font
 .wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
 h1{font-size:clamp(2.2rem,7vw,3.6rem);font-weight:800;line-height:1}
-h1 em{font-style:normal;color:var(--tomato)}
+h1 em{font-style:normal;color:var(--ketchup)}
 h2{font-size:1.55rem;font-weight:800}
 h3{font-size:1.1rem;font-weight:800}
 p{margin:0}
 .lede{color:var(--muted);max-width:60ch}
-.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--basil);font-weight:600}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mustard);font-weight:600}
 header{display:flex;flex-direction:column;gap:14px;padding-bottom:8px;border-bottom:2px solid var(--ink)}
 
 section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:20px}
@@ -62,7 +62,7 @@ section{background:var(--card);border:1px solid var(--line);border-radius:10px;p
 .hint{font-size:.85rem;color:var(--muted)}
 textarea,input[type=text],input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px}
 textarea{min-height:84px;resize:vertical}
-textarea:focus,input:focus{outline:none;border-color:var(--basil)}
+textarea:focus,input:focus{outline:none;border-color:var(--mustard)}
 
 .group{display:flex;flex-direction:column;gap:14px}
 .group+.group{padding-top:20px;border-top:1px solid var(--line)}
@@ -72,10 +72,10 @@ textarea:focus,input:focus{outline:none;border-color:var(--basil)}
 .sl{display:flex;flex-direction:column;gap:4px}
 .sl-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600}
 .sl-top small{font-weight:400;color:var(--muted);font-size:.82rem}
-.val{font:600 .9rem var(--mono);font-variant-numeric:tabular-nums;color:var(--tomato);background:none;border:1px solid transparent;border-radius:6px;min-width:4.5rem;min-height:34px;padding:0 8px;cursor:pointer;text-align:right}
+.val{font:600 .9rem var(--mono);font-variant-numeric:tabular-nums;color:var(--ketchup);background:none;border:1px solid transparent;border-radius:6px;min-width:4.5rem;min-height:34px;padding:0 8px;cursor:pointer;text-align:right}
 .val.empty{color:var(--muted);font-weight:400}
-.val:focus-visible{outline:2px solid var(--basil)}
-input[type=range]{width:100%;accent-color:var(--tomato)}
+.val:focus-visible{outline:2px solid var(--mustard)}
+input[type=range]{width:100%;accent-color:var(--ketchup)}
 input[type=range].unset{opacity:.4}
 
 .overall{padding:16px;border-radius:8px;background:var(--bg);border:2px solid var(--ink);display:flex;flex-direction:column;gap:6px}
@@ -86,39 +86,47 @@ input[type=range].unset{opacity:.4}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip input{position:absolute;opacity:0;pointer-events:none}
 .chip label{display:inline-block;padding:7px 14px;border:1.5px solid var(--line);border-radius:999px;cursor:pointer;font-size:.92rem;background:var(--bg)}
-.chip input:checked+label{border-color:var(--tomato);background:var(--tomato-soft);color:var(--ink)}
-.chip input:checked+label::before{content:"✓ ";font-weight:700;color:var(--tomato)}
-.chip input:focus-visible+label{outline:2px solid var(--basil);outline-offset:2px}
+.chip input:checked+label{border-color:var(--ketchup);background:var(--ketchup-soft);color:var(--ink)}
+.chip input:checked+label::before{content:"✓ ";font-weight:700;color:var(--ketchup)}
+.chip input:focus-visible+label{outline:2px solid var(--mustard);outline-offset:2px}
 
-.btn{font:600 1rem var(--body);padding:12px 20px;border-radius:8px;border:none;cursor:pointer;background:var(--tomato);color:var(--on-accent);min-height:44px}
+.btn{font:600 1rem var(--body);padding:12px 20px;border-radius:8px;border:none;cursor:pointer;background:var(--ketchup);color:var(--on-accent);min-height:44px}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
 .btn.small{font-size:.85rem;padding:6px 12px;min-height:34px}
-.btn:focus-visible{outline:2px solid var(--basil);outline-offset:2px}
+.btn:focus-visible{outline:2px solid var(--mustard);outline-offset:2px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .status{font-size:.9rem;color:var(--muted)}
-.status.warn{color:var(--tomato)}
+.status.warn{color:var(--ketchup)}
 
 .list{display:flex;flex-direction:column;gap:10px}
 .item{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--bg);display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
 .item-main{display:flex;flex-direction:column;gap:2px;min-width:0}
 .item-main b{overflow-wrap:anywhere}
 .item-meta{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
-.score{font-family:var(--display);font-weight:800;font-size:1.6rem;font-variant-numeric:tabular-nums;color:var(--tomato)}
+.score{font-family:var(--display);font-weight:800;font-size:1.6rem;font-variant-numeric:tabular-nums;color:var(--ketchup)}
 .item .row{grid-column:1/-1}
-.badge{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--basil-soft);color:var(--basil);font-weight:600}
-.badge.new{background:var(--tomato-soft);color:var(--tomato)}
+.badge{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--mustard-soft);color:var(--mustard);font-weight:600}
+.badge.new{background:var(--ketchup-soft);color:var(--ketchup)}
 .empty-list{color:var(--muted);font-size:.95rem}
 
 .finish{border:2px dashed var(--ink)}
 #code{font-family:var(--mono);font-size:.78rem;min-height:110px;word-break:break-all}
 .check{display:flex;gap:8px;align-items:center;font-size:.92rem;min-height:34px}
-.check input{width:20px;height:20px;accent-color:var(--basil)}
-a{color:var(--basil)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.check input{width:20px;height:20px;accent-color:var(--mustard)}
+a{color:var(--mustard)}
+/* Rocky drifts across the top while spinning. The 106px box fits the image's diagonal so corners never clip mid-spin;
+   the mover is (track - box) wide, so translating it 100% lands the box flush right */
+.rocky-track{height:106px;overflow:hidden}
+.rocky-mover{width:calc(100% - 106px);animation:rocky-drift 7s ease-in-out infinite alternate}
+.rocky-mover img{display:block;width:69px;height:80px;margin:13px 18.5px;animation:rocky-spin 4s linear infinite}
+@keyframes rocky-drift{from{transform:translateX(0)}to{transform:translateX(100%)}}
+@keyframes rocky-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.rocky-mover,.rocky-mover img{animation:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="rocky-track" aria-hidden="true"><div class="rocky-mover"><img src="img/rocky.png" alt="" width="69" height="80"></div></div>
   <header>
     <span class="eyebrow">Review log · Field notes</span>
     <h1>Log a <em>meal</em></h1>
