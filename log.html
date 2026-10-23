@@ -129,6 +129,11 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 #code{font-family:var(--mono);font-size:.78rem;min-height:110px;word-break:break-all}
 .check{display:flex;gap:8px;align-items:center;font-size:.92rem;min-height:34px}
 .check input{width:20px;height:20px;accent-color:var(--mustard)}
+.sec-head p.warn-note{color:var(--ketchup);font-weight:600}
+.restore{display:flex;flex-direction:column;gap:10px}
+.restore summary{cursor:pointer;font-weight:600;color:var(--muted);min-height:44px;display:flex;align-items:center}
+.restore[open]{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 24px 24px}
+.restore[open]>*+*{margin-top:10px}
 a{color:var(--mustard)}
 
 .lightbox{position:fixed;inset:0;z-index:10;background:var(--scrim-strong);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
@@ -327,7 +332,7 @@ function homeView(){
     <div class="list" id="folders"></div>
   </section>
   <section class="finish">
-    <div class="sec-head"><span class="num">✓</span><div><h2>Send It</h2><p>Makes one code with every review you haven't sent yet. Text it to me. Photos stay on your phone.</p></div></div>
+    <div class="sec-head"><span class="num">✓</span><div><h2>Send It</h2><p>Makes one code with every review you haven't sent yet. Text it to me. Photos stay on your phone.</p><p class="warn-note">Deleting this app from your home screen erases everything in it. Send first.</p></div></div>
     <label class="check"><input type="checkbox" id="all"> Include reviews I already sent</label>
     <div class="row"><button class="btn" id="gen" type="button">Make my code</button></div>
     <p class="status" id="sendMsg" aria-live="polite"></p>
@@ -337,8 +342,22 @@ function homeView(){
       <button class="btn ghost small" id="markSent" type="button" style="align-self:flex-start">I sent it, mark these as sent</button>
     </div>
   </section>
+  <details class="restore">
+    <summary>Restore from a code</summary>
+    <p class="hint">Lost your reviews? Paste a code you sent before and they come back. Dishes you already have aren't doubled.</p>
+    <textarea id="restoreCode" placeholder="JACKLOG…" aria-label="Code to restore"></textarea>
+    <div class="row"><button class="btn ghost" id="restoreBtn" type="button">Restore</button><span class="status" id="restoreMsg" aria-live="polite"></span></div>
+  </details>
   <p class="hint">Haven't taken the palate quiz yet? <a href="./">Start there</a>.</p>`;
   drawFolders();
+  $("restoreBtn").addEventListener("click",()=>{
+    const m=$("restoreMsg");
+    try{
+      const {places,dishes}=importCode($("restoreCode").value);
+      m.className="status";m.textContent=dishes||places?`Restored ${plural(dishes,"dish","dishes")} and ${plural(places,"new restaurant")}.`:"Nothing new in that code. You already have all of it.";
+      $("restoreCode").value="";drawFolders();
+    }catch(e){m.className="status warn";m.textContent="That doesn't look like a full Vibe Log code. Make sure you copied all of it."}
+  });
   const add=()=>{
     const n=$("newName").value.trim();
     if(!n){$("addMsg").textContent="Type the restaurant name first.";return}
@@ -349,6 +368,31 @@ function homeView(){
   $("addPlace").addEventListener("click",add);
   $("newName").addEventListener("keydown",e=>{if(e.key==="Enter")add()});
   bindSend();
+}
+// Restore: merge a previously sent JACKLOG1 or JACKLOG2 code back in. Existing dish ids are skipped, restaurants match by id then name.
+// Restored dishes count as sent (Carson already has them); restaurants made from v1 codes are unsent so their new id reaches the CSV
+function importCode(code){
+  const m=String(code).trim().match(/^JACKLOG(\d+)\.([\s\S]+)$/);
+  if(!m)throw new Error("not a code");
+  const d=JSON.parse(decodeURIComponent(escape(atob(m[2].replace(/\s+/g,"")))));
+  const v2=(d.v||1)>=2,created=new Set();let places=0,dishes=0;
+  const byName=n=>db.places.find(p=>p.name.trim().toLowerCase()===n.trim().toLowerCase());
+  const ensure=(id,name,r)=>{
+    const nm=String(name||"").trim()||"Unnamed";
+    let p=(id&&place(id))||byName(nm);
+    if(!p){p={id:id||uid(),name:nm,r:{},photos:[],sent:v2};db.places.push(p);created.add(p.id);places++}
+    if(created.has(p.id)&&r)Object.assign(p.r,r);
+    return p;
+  };
+  const fromCode={};
+  if(v2)(d.p||[]).forEach(x=>{fromCode[x.id]=ensure(x.id,x.name,x.r)});
+  [...(d.r||[])].sort((a,b)=>(a.date||"").localeCompare(b.date||"")).forEach(x=>{
+    if(review(x.id))return;
+    const p=v2?(fromCode[x.place]||ensure(x.place,"Unnamed")):ensure(null,x.rest,x.r);
+    db.reviews.push({id:x.id,place:p.id,dish:x.dish||"",date:x.date||today(),price:x.price,f:x.f||{},deal:x.deal||[],o:x.o,note:x.note||"",photos:[],sent:true});dishes++;
+  });
+  persist();
+  return {places,dishes};
 }
 function drawFolders(){
   const ps=[...db.places].sort((x,y)=>lastDate(y).localeCompare(lastDate(x))||x.name.localeCompare(y.name));
