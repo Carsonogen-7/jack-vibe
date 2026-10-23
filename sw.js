@@ -1,10 +1,16 @@
 // Offline support: cache the app shell, serve it when there's no connection.
 // Bump VERSION whenever index.html or log.html changes so phones pick up the new copy.
-const VERSION = "jack-palate-v7";
+const VERSION = "jack-palate-v8";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "log.html", "log.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png", "img/rocky.png"];
 
+// GitHub Pages sends max-age=600, so plain fetches can return a copy up to 10 minutes stale.
+// Same-origin files are always revalidated with the server (cheap: an ETag check) instead.
+const fresh = req => new URL(req.url).origin === location.origin
+  ? new Request(req.url, { cache: "no-cache", credentials: "same-origin" })
+  : req;
+
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", e => {
@@ -19,7 +25,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    fetch(e.request)
+    fetch(fresh(e.request))
       .then(res => {
         if (res.ok && new URL(e.request.url).origin === location.origin) {
           const copy = res.clone();
