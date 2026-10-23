@@ -142,6 +142,23 @@ a{color:var(--mustard)}
 
 /* Rocky drifts across the top while spinning. The 106px box fits the image's diagonal so corners never clip mid-spin;
    the mover is (track - box) wide, so translating it 100% lands the box flush right */
+body.card-mode .rocky-track{display:none}
+.card{container-type:inline-size;width:100%;max-width:440px;margin:0 auto;aspect-ratio:4/5;display:flex;flex-direction:column;gap:5cqw;padding:7cqw 7cqw 6cqw;border-radius:14px;overflow:hidden;background:var(--card);border:1px solid var(--line);border-top:2.4cqw solid var(--ketchup)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-end;gap:4cqw;padding-bottom:4cqw;border-bottom:2px solid var(--ink)}
+.card-head h2{min-width:0;font-size:9cqw;line-height:1.02;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.card-head h2.long{font-size:7cqw}
+.card-score{flex:none;text-align:right;line-height:.82;color:var(--ketchup);white-space:nowrap}
+.card-score b{font:800 21cqw var(--display);font-variant-numeric:tabular-nums}
+.card-score span{font:600 4.5cqw var(--mono);color:var(--muted)}
+.card-dishes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1.4cqw;font-size:5cqw;line-height:1.4;min-height:0;overflow:hidden}
+.card-dishes li{display:flex;justify-content:space-between;gap:3cqw;border-bottom:1px dashed var(--line);padding-bottom:1.4cqw}
+.card-dishes li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-dishes li b{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ketchup)}
+.card-dishes li.card-more{color:var(--muted);border-bottom:none}
+.card-rest{margin-top:auto;font-size:3.6cqw;color:var(--muted)}
+.card-rest b{color:var(--ink);font-family:var(--mono)}
+.chip-link{display:inline-flex;align-items:center;min-height:34px;padding:6px 14px;border:1.5px solid var(--line);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--bg);font-size:.92rem}
+.chip-link.on{border-color:var(--ketchup);background:var(--ketchup-soft)}
 .rocky-track{max-width:760px;margin:0 auto 12px;height:106px;overflow:hidden}
 .rocky-mover{width:calc(100% - 106px);animation:rocky-drift 7s ease-in-out infinite alternate}
 .rocky-mover img{display:block;width:69px;height:80px;margin:13px 18.5px;animation:rocky-spin 4s linear infinite}
@@ -298,8 +315,9 @@ function twoTap(btn,label,fn){
 const view=$("view");
 function render(){
   closePhoto();
-  const [a,b,c]=location.hash.slice(1).split("/");
-  if(a==="p"&&place(b)){c==="dish"?dishView(place(b),null):placeView(place(b))}
+  const [a,b,c,d]=location.hash.slice(1).split("/");
+  document.body.classList.toggle("card-mode",a==="p"&&c==="card"&&!!place(b));
+  if(a==="p"&&place(b)){c==="dish"?dishView(place(b),null):c==="card"?cardView(place(b),d):placeView(place(b))}
   else if(a==="d"&&review(b)&&place(review(b).place))dishView(place(review(b).place),review(b));
   else homeView();
   window.scrollTo(0,0);
@@ -434,6 +452,31 @@ function bindSend(){
 }
 
 // Restaurant: name, photos, restaurant scores (asked once, editable later), and its dishes
+// Trip card: one screenshot-ready summary of a visit (every dish from one date) for Instagram. Scores only, no photos.
+// Sized 4:5 like an Instagram post, with type in container units so it looks the same on any phone
+const niceDate=s=>{const d=new Date(s+"T12:00:00");return isNaN(d)?s:d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})};
+function cardView(p,date){
+  const all=dishesOf(p.id),dates=[...new Set(all.map(r=>r.date))].sort().reverse();
+  if(!dates.length){location.replace("#p/"+p.id);return}
+  if(!dates.includes(date))date=dates[0];
+  const ds=all.filter(r=>r.date===date).sort((x,y)=>y.o-x.o);
+  const trip=ds.reduce((s,r)=>s+r.o,0)/ds.length;
+  const shown=ds.length>7?ds.slice(0,6):ds,more=ds.length-shown.length; // never more than 7 rows, so nothing is silently cut off
+  const rated=REST.filter(c=>p.r[c.k]!=null);
+  view.innerHTML=`
+  <div class="card" id="card">
+    <div class="card-head">
+      <h2${p.name.length>16?' class="long"':""}>${esc(p.name)}</h2>
+      <div class="card-score"><b>${trip.toFixed(1)}</b><span>/10</span></div>
+    </div>
+    <ol class="card-dishes">${shown.map(r=>`<li><span>${esc(r.dish||"Untitled dish")}</span><b>${r.o.toFixed(1)}</b></li>`).join("")}${more?`<li class="card-more"><span>+ ${more} more</span></li>`:""}</ol>
+    ${rated.length?`<p class="card-rest">${rated.map(c=>`${c.n} <b>${p.r[c.k].toFixed(1)}</b>`).join(" · ")}</p>`:""}
+  </div>
+  <p class="hint">Screenshot the card and post it.</p>
+  ${dates.length>1?`<div class="field"><span class="lbl">Which visit?</span><div class="chips">${dates.map(x=>`<a class="chip-link${x===date?" on":""}" href="#p/${p.id}/card/${x}">${esc(niceDate(x))}</a>`).join("")}</div></div>`:""}
+  <a class="back" href="#p/${p.id}">‹ ${esc(p.name)}</a>`;
+}
+
 function placeView(p){
   const ds=dishesOf(p.id),rated=Object.keys(p.r).length>0;
   view.innerHTML=`
@@ -449,7 +492,7 @@ function placeView(p){
   </section>
   <section>
     <div class="sec-head"><span class="num">${ds.length}</span><div><h2>Dishes</h2></div></div>
-    <a class="btn" href="#p/${p.id}/dish">+ Add a dish</a>
+    <div class="row"><a class="btn" href="#p/${p.id}/dish">+ Add a dish</a>${ds.length?`<a class="btn ghost" href="#p/${p.id}/card">Trip card</a>`:""}</div>
     <div class="list" id="dishes">${ds.map(r=>`<a class="folder" href="#d/${r.id}">${(r.photos||[])[0]?`<img class="thumb" data-photo="${r.photos[0]}" alt="">`:`<span class="thumb">${esc((r.dish[0]||"?").toUpperCase())}</span>`}<span class="item-main"><b>${esc(r.dish||"Untitled dish")}</b><span class="item-meta">${esc([r.date,r.price!=null?"$"+r.price:""].filter(Boolean).join(" · "))}${r.sent?"":' · <span class="dot">not sent</span>'}</span></span><span class="score">${r.o.toFixed(1)}</span></a>`).join("")||'<p class="empty-list">No dishes yet.</p>'}</div>
   </section>
   <div class="row"><button class="btn ghost small" id="delPlace" type="button">Delete restaurant</button></div>`;
